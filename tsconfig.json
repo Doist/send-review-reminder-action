@@ -1,0 +1,12 @@
+{
+    "extends": "@doist/tsconfig",
+    "compilerOptions": {
+        "target": "es6",
+        "module": "commonjs",
+        "rootDir": "./src",
+        "noImplicitAny": true,
+        "esModuleInterop": true,
+        "noEmit": true
+    },
+    "exclude": ["node_modules"]
+}

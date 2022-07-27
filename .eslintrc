@@ -1,0 +1,10 @@
+{
+  "extends": [
+    "@doist/eslint-config/recommended",
+    "@doist/eslint-config/recommended-requiring-type-checking",
+    "@doist/eslint-config/simple-import-sort"
+  ],
+  "parserOptions": {
+    "project": "./tsconfig.json"
+  }
+}
