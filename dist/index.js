@@ -8879,12 +8879,17 @@ const GITHUB_REPO_OWNER = github.context.repo.owner;
 const GITHUB_REPO = github.context.repo.repo;
 const GITHUB_TOKEN = core.getInput('token', { required: true });
 const REVIEW_TIME_MS = parseInt(core.getInput('review_time_ms', { required: true }));
+const IGNORE_AUTHORS = core.getInput('ignore_authors', { required: false });
 const TWIST_URL = core.getInput('twist_url', { required: true });
 const REMINDER_MESSAGE = core.getInput('message', { required: true });
 function run() {
     return __awaiter(this, void 0, void 0, function* () {
         const pullRequests = yield (0, pullrequest_1.fetchPullRequests)(GITHUB_TOKEN, GITHUB_REPO_OWNER, GITHUB_REPO);
         for (const pullRequest of pullRequests) {
+            if ((0, pullrequest_1.shouldIgnore)(pullRequest, IGNORE_AUTHORS)) {
+                core.info(`Ignoring #${pullRequest.number} "${pullRequest.title}"`);
+                continue;
+            }
             core.info(`Checking #${pullRequest.number} "${pullRequest.title}"`);
             const remind = yield (0, pullrequest_1.isMissingReview)(pullRequest, REVIEW_TIME_MS, GITHUB_TOKEN, GITHUB_REPO_OWNER, GITHUB_REPO);
             if (remind) {
@@ -8943,7 +8948,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.isMissingReview = exports.fetchPullRequests = void 0;
+exports.isMissingReview = exports.shouldIgnore = exports.fetchPullRequests = void 0;
 const github = __importStar(__nccwpck_require__(5438));
 function fetchPullRequests(gitHubToken, repoOwner, repo) {
     return __awaiter(this, void 0, void 0, function* () {
@@ -8957,6 +8962,17 @@ function fetchPullRequests(gitHubToken, repoOwner, repo) {
     });
 }
 exports.fetchPullRequests = fetchPullRequests;
+function shouldIgnore(pullRequest, ignoreAuthors) {
+    if (pullRequest.requested_reviewers.length === 0) {
+        return true;
+    }
+    const ignoreAuthorsArray = ignoreAuthors.split(',').map((author) => author.trim());
+    if (ignoreAuthorsArray.includes(pullRequest.user.login)) {
+        return true;
+    }
+    return false;
+}
+exports.shouldIgnore = shouldIgnore;
 function isMissingReview(pullRequest, reviewDeadline, gitHubToken, repoOwner, repo) {
     return __awaiter(this, void 0, void 0, function* () {
         const octokit = github.getOctokit(gitHubToken);

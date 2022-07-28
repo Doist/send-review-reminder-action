@@ -23,6 +23,7 @@ jobs:
       - uses: doist/send-review-reminder-action
         with:
           message: '%reviewer%, please review [#%pr_number% - %pr_title%](%pr_url%)'
+          ignore_authors: 'tom, renovate'
           review_time_ms: 86400000 # 1 day in milliseconds
           twist_url: 'https://twist.com/api/v3/integration_incoming/post_data?install_id=[install id]&install_token=[install token]'
           token: ${{ secrets.DOIST_BOT_TOKEN }}

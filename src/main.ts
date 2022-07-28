@@ -1,7 +1,7 @@
 import * as core from '@actions/core'
 import * as github from '@actions/github'
 
-import { fetchPullRequests, isMissingReview } from './pullrequest'
+import { fetchPullRequests, isMissingReview, shouldIgnore } from './pullrequest'
 import { sendReminder } from './reminder'
 
 const GITHUB_REPO_OWNER = github.context.repo.owner
@@ -9,12 +9,18 @@ const GITHUB_REPO = github.context.repo.repo
 
 const GITHUB_TOKEN = core.getInput('token', { required: true })
 const REVIEW_TIME_MS = parseInt(core.getInput('review_time_ms', { required: true }))
+const IGNORE_AUTHORS = core.getInput('ignore_authors', { required: false })
 const TWIST_URL = core.getInput('twist_url', { required: true })
 const REMINDER_MESSAGE = core.getInput('message', { required: true })
 
 async function run(): Promise<void> {
     const pullRequests = await fetchPullRequests(GITHUB_TOKEN, GITHUB_REPO_OWNER, GITHUB_REPO)
     for (const pullRequest of pullRequests) {
+        if (shouldIgnore(pullRequest, IGNORE_AUTHORS)) {
+            core.info(`Ignoring #${pullRequest.number} "${pullRequest.title}"`)
+            continue
+        }
+
         core.info(`Checking #${pullRequest.number} "${pullRequest.title}"`)
         const remind = await isMissingReview(
             pullRequest,

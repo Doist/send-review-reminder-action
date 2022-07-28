@@ -5,6 +5,7 @@ type User = {
 type PullRequest = {
     number: number
     title: string
+    user: User
     html_url: string
     requested_reviewers: User[]
 }

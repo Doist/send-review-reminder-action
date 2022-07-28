@@ -6,6 +6,9 @@ inputs:
     description: 'Required review time'
     required: true
     default: '86400000'
+  ignore_authors:
+    description: 'Ignore pull requests from those authors'
+    required: false
   twist_url:
     description: 'Twist integration url to post reminder messages'
     required: true

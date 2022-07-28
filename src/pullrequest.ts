@@ -17,6 +17,19 @@ export async function fetchPullRequests(
     return data as PullRequest[]
 }
 
+export function shouldIgnore(pullRequest: PullRequest, ignoreAuthors: string): boolean {
+    if (pullRequest.requested_reviewers.length === 0) {
+        return true
+    }
+    const ignoreAuthorsArray = ignoreAuthors.split(',').map((author) => author.trim())
+
+    if (ignoreAuthorsArray.includes(pullRequest.user.login)) {
+        return true
+    }
+
+    return false
+}
+
 export async function isMissingReview(
     pullRequest: PullRequest,
     reviewDeadline: number,
