@@ -20,7 +20,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: doist/send-review-reminder-action
+      - uses: doist/send-review-reminder-action@main
         with:
           message: '%reviewer%, please review [#%pr_number% - %pr_title%](%pr_url%)'
           ignore_authors: 'tom, renovate'
