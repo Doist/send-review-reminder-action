@@ -1,0 +1,21 @@
+name: 'Send review reminder'
+description: 'Reminds about pending GitHub pull request review on twist.com'
+author: 'Piotr Wilczek'
+inputs:
+  review_time_ms:
+    description: 'Required review time'
+    required: true
+    default: '86400000'
+  twist_url:
+    description: 'Twist integration url to post reminder messages'
+    required: true
+  message:
+    description: 'Reminder message'
+    required: true
+    default: '%reviewer%, please review [#%pr_number% - %pr_title%](%pr_url%)'
+  token:
+    description: 'GitHub token'
+    required: true
+runs:
+  using: 'node16'
+  main: 'dist/index.js'
