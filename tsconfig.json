@@ -6,8 +6,7 @@
         "rootDir": "./src",
         "noImplicitAny": true,
         "esModuleInterop": true,
-        "noEmit": true,
-        "ignoreDeprecations": "5.0"
+        "noEmit": true
     },
     "exclude": ["node_modules"]
 }
