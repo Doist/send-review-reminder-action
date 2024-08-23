@@ -19,6 +19,10 @@ inputs:
   token:
     description: 'GitHub token'
     required: true
+  exclude_draft_prs:
+    description: 'Whether we should exclude draft PRs when checking for pending reviews'
+    required: true
+    default: false
 runs:
   using: 'node20'
   main: 'dist/index.js'

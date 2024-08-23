@@ -34,7 +34,7 @@ export async function fetchPullRequests(
  *     A list of usernames, if the PR was created by any of these authors we will ignore it.
  * @returns True if we should ignore the PR, otherwise false
  */
-export function shouldIgnore(pullRequest: PullRequest, ignoreAuthors: string): boolean {
+export function shouldIgnore(pullRequest: PullRequest, ignoreAuthors: string, excludeDraftPRs: boolean): boolean {
     if (pullRequest.requested_reviewers.length === 0) {
         return true
     }
@@ -42,6 +42,10 @@ export function shouldIgnore(pullRequest: PullRequest, ignoreAuthors: string): b
 
     if (ignoreAuthorsArray.includes(pullRequest.user.login)) {
         return true
+    }
+
+    if (excludeDraftPRs && pullRequest.draft) {
+      return true
     }
 
     return false

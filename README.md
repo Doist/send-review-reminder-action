@@ -25,6 +25,7 @@ jobs:
         with:
           message: '%reviewer%, please review [#%pr_number% - %pr_title%](%pr_url%)'
           ignore_authors: 'tom, renovate'
+          exclude_draft_prs: true
           review_time_ms: 86400000 # 1 day in milliseconds
           twist_url: 'https://twist.com/api/v3/integration_incoming/post_data?install_id=[install id]&install_token=[install token]'
           token: ${{ secrets.DOIST_BOT_TOKEN }}
@@ -40,6 +41,7 @@ jobs:
 |twist_url|yes|`https://twist.com/api/v3/integration_incoming/post_data?install_id=[install id]&install_token=[install token]`|The installed integration url for posting a message to a Twist thread|
 |token|yes|`adbc12431414`|The token for accessing the GitHub API to query the state of the PRs in a repo|
 |ignore_authors|no|`tom, renovate`|Usernames of PR creators who's PRs will be ignored|
+|exclude_draft_prs|no|`false`|Whether we should exclude draft PRs when checking reviews, defaults to false|
 
 ## Development
 
