@@ -9551,11 +9551,12 @@ const REVIEW_TIME_MS = parseInt(core.getInput('review_time_ms', { required: true
 const IGNORE_AUTHORS = core.getInput('ignore_authors', { required: false });
 const TWIST_URL = core.getInput('twist_url', { required: true });
 const REMINDER_MESSAGE = core.getInput('message', { required: true });
+const EXCLUDE_DRAFT_PRS = core.getBooleanInput('exclude_draft_prs', { required: true });
 function run() {
     return __awaiter(this, void 0, void 0, function* () {
         const pullRequests = yield (0, pullrequest_1.fetchPullRequests)(GITHUB_TOKEN, GITHUB_REPO_OWNER, GITHUB_REPO);
         for (const pullRequest of pullRequests) {
-            if ((0, pullrequest_1.shouldIgnore)(pullRequest, IGNORE_AUTHORS)) {
+            if ((0, pullrequest_1.shouldIgnore)(pullRequest, IGNORE_AUTHORS, EXCLUDE_DRAFT_PRS)) {
                 core.info(`Ignoring #${pullRequest.number} "${pullRequest.title}"`);
                 continue;
             }
@@ -9648,12 +9649,15 @@ exports.fetchPullRequests = fetchPullRequests;
  *     A list of usernames, if the PR was created by any of these authors we will ignore it.
  * @returns True if we should ignore the PR, otherwise false
  */
-function shouldIgnore(pullRequest, ignoreAuthors) {
+function shouldIgnore(pullRequest, ignoreAuthors, excludeDraftPRs) {
     if (pullRequest.requested_reviewers.length === 0) {
         return true;
     }
     const ignoreAuthorsArray = ignoreAuthors.split(',').map((author) => author.trim());
     if (ignoreAuthorsArray.includes(pullRequest.user.login)) {
+        return true;
+    }
+    if (excludeDraftPRs && pullRequest.draft) {
         return true;
     }
     return false;
