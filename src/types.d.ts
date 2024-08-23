@@ -16,6 +16,8 @@ type PullRequest = {
     html_url: string
     /** A list of users who a review has been requested from */
     requested_reviewers: User[]
+    /** Whether the PR is currently in draft mode */
+    draft?: boolean
 }
 
 /** Result expected from our GraphQL request to GitHub for PR details */
