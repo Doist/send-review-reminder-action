@@ -2,6 +2,13 @@ import { HttpClient, HttpClientResponse } from '@actions/http-client'
 
 import type { PullRequest } from './types'
 
+/**
+ * Sends a reminder about the stalled pull request to a Twist thread
+ * @param pullRequest The PR to send the reminer about
+ * @param messageTemplate The message template to fill with details of the review
+ * @param twistUrl The integration link for Twist used to post the message to a thread / channel
+ * @returns Awaitable http post response
+ */
 export async function sendReminder(
     pullRequest: PullRequest,
     messageTemplate: string,
