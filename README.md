@@ -1,9 +1,10 @@
 # Send Review Reminder Action
 
-This action checks all opened pull requests review request.
+This action checks all opened pull requests in a repository to find those that
+are expecting a review they haven't received in the specified timeframe.
 
-If a pull request has a pending review request and the specified review time 
-has passed, the action sends a reminder message on twist.com.
+Any PRs found that have been waiting too long will have a reminder sent to a
+Twist thread on their behalf.
 
 ## Usage:
 
