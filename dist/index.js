@@ -9619,6 +9619,14 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.isMissingReview = exports.shouldIgnore = exports.fetchPullRequests = void 0;
 const github = __importStar(__nccwpck_require__(5438));
+/**
+ * Get a list of all currently open pull requests in a repository
+ *
+ * @param gitHubToken The token used to authenticate with GitHub to access the repo
+ * @param repoOwner The owner of the repo
+ * @param repo The name of the repo
+ * @returns An awaiting collection of pull request objects
+ */
 function fetchPullRequests(gitHubToken, repoOwner, repo) {
     return __awaiter(this, void 0, void 0, function* () {
         const octokit = github.getOctokit(gitHubToken);
@@ -9631,6 +9639,15 @@ function fetchPullRequests(gitHubToken, repoOwner, repo) {
     });
 }
 exports.fetchPullRequests = fetchPullRequests;
+/**
+ * Decide whether to ignore this pull request and not send any reminders about it.
+ * Uses the collection of authors to determine whether it should be ignored.
+ *
+ * @param pullRequest The PR being processed
+ * @param ignoreAuthors
+ *     A list of usernames, if the PR was created by any of these authors we will ignore it.
+ * @returns True if we should ignore the PR, otherwise false
+ */
 function shouldIgnore(pullRequest, ignoreAuthors) {
     if (pullRequest.requested_reviewers.length === 0) {
         return true;
@@ -9642,6 +9659,16 @@ function shouldIgnore(pullRequest, ignoreAuthors) {
     return false;
 }
 exports.shouldIgnore = shouldIgnore;
+/**
+ * Identifies whether the PR being passed in has not had any review activity in the last 24 hours.
+ *
+ * @param pullRequest The pull request to check
+ * @param reviewDeadline The total time in ms before a PR is considered stale
+ * @param gitHubToken The token used to authenticate with GitHub to access the repo
+ * @param repoOwner The owner of the repo
+ * @param repo The name of the repo
+ * @returns An awaitable bool indicating whether this PR is missing a review.
+ */
 function isMissingReview(pullRequest, reviewDeadline, gitHubToken, repoOwner, repo) {
     return __awaiter(this, void 0, void 0, function* () {
         const octokit = github.getOctokit(gitHubToken);
@@ -9679,6 +9706,29 @@ function isMissingReview(pullRequest, reviewDeadline, gitHubToken, repoOwner, re
     });
 }
 exports.isMissingReview = isMissingReview;
+/**
+ * Receives a collection of events from the PR and identifies what the time of the last event was.
+ *
+ * @param nodes Events taken from the PR
+ * @returns The time the last event occurred (milliseconds from epoch)
+ */
+function getLatestCreatedAtTime(nodes) {
+    if (nodes.length === 0) {
+        return undefined;
+    }
+    const times = nodes.map((el) => new Date(el.createdAt).getTime());
+    return Math.max(...times);
+}
+/**
+ * Check whether this PR has been waiting over 24 hours for a review,
+ * based on the time between when the review was requested, and whether
+ * there has been any review activity since then.
+ *
+ * @param reviewRequestTime The latest time the creator requested a person review the PR
+ * @param reviewTime The latest time the PR was reviewed
+ * @param reviewDeadline The total time in ms before a PR is considered stale
+ * @returns True if the PR is considered stale, otherwise false
+ */
 function isAfterReviewDeadline(reviewRequestTime, reviewTime, reviewDeadline) {
     if (!reviewRequestTime) {
         // There is no review request.
@@ -9694,13 +9744,6 @@ function isAfterReviewDeadline(reviewRequestTime, reviewTime, reviewDeadline) {
         return false;
     }
     return true;
-}
-function getLatestCreatedAtTime(nodes) {
-    if (nodes.length === 0) {
-        return undefined;
-    }
-    const times = nodes.map((el) => new Date(el.createdAt).getTime());
-    return Math.max(...times);
 }
 
 
@@ -9723,6 +9766,13 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.sendReminder = void 0;
 const http_client_1 = __nccwpck_require__(6255);
+/**
+ * Sends a reminder about the stalled pull request to a Twist thread
+ * @param pullRequest The PR to send the reminer about
+ * @param messageTemplate The message template to fill with details of the review
+ * @param twistUrl The integration link for Twist used to post the message to a thread / channel
+ * @returns Awaitable http post response
+ */
 function sendReminder(pullRequest, messageTemplate, twistUrl) {
     return __awaiter(this, void 0, void 0, function* () {
         const httpClient = new http_client_1.HttpClient();
