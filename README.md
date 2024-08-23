@@ -32,6 +32,8 @@ jobs:
 
 ## Development
 
+Uses Node v20.x
+
 Switch into this folder after checking out the repository, run `npm install` to install all dependencies.
 
 After applying your changes, run `npm run all`. It will check your code and compile a new version into the `dist` 
