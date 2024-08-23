@@ -38,7 +38,7 @@ jobs:
 |review_time_ms|yes|`86400000`|The time in milliseconds a PR has to wait before a reminder will be sen, example is 24 hours|
 |message|yes|`%reviewer%, please review [#%pr_number% - %pr_title%](%pr_url%)`|The reminder message to send, takes 4 parameters for string interpolation: `%reviewer%`, `%pr_number%`, `%pr_title%` and `%pr_url%`|
 |twist_url|yes|`https://twist.com/api/v3/integration_incoming/post_data?install_id=[install id]&install_token=[install token]`|The installed integration url for posting a message to a Twist thread|
-|token|yes|adbc12431414|The token for accessing the GitHub API to query the state of the PRs in a repo|
+|token|yes|`adbc12431414`|The token for accessing the GitHub API to query the state of the PRs in a repo|
 |ignore_authors|no|`tom, renovate`|Usernames of PR creators who's PRs will be ignored|
 
 ## Development
