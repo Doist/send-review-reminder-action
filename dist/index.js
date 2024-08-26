@@ -9551,12 +9551,13 @@ const REVIEW_TIME_MS = parseInt(core.getInput('review_time_ms', { required: true
 const IGNORE_AUTHORS = core.getInput('ignore_authors', { required: false });
 const TWIST_URL = core.getInput('twist_url', { required: true });
 const REMINDER_MESSAGE = core.getInput('message', { required: true });
-const EXCLUDE_DRAFT_PRS = core.getBooleanInput('exclude_draft_prs', { required: true });
+const IGNORE_DRAFT_PRS = core.getBooleanInput('ignore_draft_prs', { required: true });
+const IGNORE_LABELS = core.getInput('ignore_labels', { required: false });
 function run() {
     return __awaiter(this, void 0, void 0, function* () {
         const pullRequests = yield (0, pullrequest_1.fetchPullRequests)(GITHUB_TOKEN, GITHUB_REPO_OWNER, GITHUB_REPO);
         for (const pullRequest of pullRequests) {
-            if ((0, pullrequest_1.shouldIgnore)(pullRequest, IGNORE_AUTHORS, EXCLUDE_DRAFT_PRS)) {
+            if ((0, pullrequest_1.shouldIgnore)(pullRequest, IGNORE_AUTHORS, IGNORE_DRAFT_PRS, IGNORE_LABELS)) {
                 core.info(`Ignoring #${pullRequest.number} "${pullRequest.title}"`);
                 continue;
             }
@@ -9644,21 +9645,31 @@ exports.fetchPullRequests = fetchPullRequests;
  * Decide whether to ignore this pull request and not send any reminders about it.
  * Uses the collection of authors to determine whether it should be ignored.
  *
- * @param pullRequest The PR being processed
+ * @param pullRequest The PR being processed.
  * @param ignoreAuthors
  *     A list of usernames, if the PR was created by any of these authors we will ignore it.
- * @returns True if we should ignore the PR, otherwise false
+ * @param ignoreDraftPRs If true any PR in draft state will be ignored.
+ * @param ignoreLabels A list of labels, if the PR has any of these attached it will be ignored.
+ * @returns True if we should ignore the PR, otherwise false.
  */
-function shouldIgnore(pullRequest, ignoreAuthors, excludeDraftPRs) {
+function shouldIgnore(pullRequest, ignoreAuthors, ignoreDraftPRs, ignoreLabels) {
     if (pullRequest.requested_reviewers.length === 0) {
         return true;
     }
-    const ignoreAuthorsArray = ignoreAuthors.split(',').map((author) => author.trim());
+    const ignoreAuthorsArray = splitStringList(ignoreAuthors);
     if (ignoreAuthorsArray.includes(pullRequest.user.login)) {
         return true;
     }
-    if (excludeDraftPRs && pullRequest.draft) {
+    if (ignoreDraftPRs && pullRequest.draft) {
         return true;
+    }
+    if (pullRequest.labels) {
+        const ignoreLabelsArray = splitStringList(ignoreLabels);
+        for (const labelOnPR of pullRequest.labels) {
+            if (ignoreLabelsArray.includes(labelOnPR.name)) {
+                return true;
+            }
+        }
     }
     return false;
 }
@@ -9748,6 +9759,9 @@ function isAfterReviewDeadline(reviewRequestTime, reviewTime, reviewDeadline) {
         return false;
     }
     return true;
+}
+function splitStringList(input) {
+    return input.split(',').map((item) => item.trim());
 }
 
 
