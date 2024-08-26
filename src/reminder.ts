@@ -13,19 +13,34 @@ export async function sendReminder(
     pullRequest: PullRequest,
     messageTemplate: string,
     twistUrl: string,
+    authorToTwistMapping: { [id: string]: number },
 ): Promise<HttpClientResponse> {
-    const httpClient = new HttpClient()
-    const reviewers = pullRequest.requested_reviewers.map((rr) => `${rr.login}`).join(', ')
+    const recipients: Array<number> = []
+    const reviewers = pullRequest.requested_reviewers
+        .map((rr) => {
+            const twistUserID = authorToTwistMapping[rr.login]
+
+            if (twistUserID) {
+                recipients.push(twistUserID)
+                return `[${rr.login}](twist-mention://${twistUserID})`
+            }
+            return `${rr.login}`
+        })
+        .join(', ')
+
     const message = messageTemplate
         .replace('%reviewer%', reviewers)
         .replace('%pr_number%', pullRequest.number.toString())
         .replace('%pr_title%', pullRequest.title)
         .replace('%pr_url%', pullRequest.html_url)
-    const data = {
-        content: message,
-    }
-    const headers = {
-        'content-type': 'application/json',
-    }
-    return httpClient.post(twistUrl, JSON.stringify(data), headers)
+
+    const httpClient = new HttpClient()
+    return httpClient.post(
+        twistUrl,
+        JSON.stringify({
+            content: message,
+            recipients: recipients,
+        }),
+        { 'content-type': 'application/json' },
+    )
 }

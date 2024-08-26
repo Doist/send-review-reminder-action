@@ -9551,6 +9551,7 @@ const REVIEW_TIME_MS = parseInt(core.getInput('review_time_ms', { required: true
 const IGNORE_AUTHORS = core.getInput('ignore_authors', { required: false });
 const TWIST_URL = core.getInput('twist_url', { required: true });
 const REMINDER_MESSAGE = core.getInput('message', { required: true });
+const AUTHOR_TO_TWIST_MAPPING = core.getInput('author_to_twist_mapping', { required: false });
 const IGNORE_DRAFT_PRS = core.getBooleanInput('ignore_draft_prs', { required: true });
 const IGNORE_LABELS = core.getInput('ignore_labels', { required: false });
 const IGNORE_PRS_WITH_FAILING_CHECKS = core.getBooleanInput('ignore_prs_with_failing_checks', {
@@ -9558,6 +9559,7 @@ const IGNORE_PRS_WITH_FAILING_CHECKS = core.getBooleanInput('ignore_prs_with_fai
 });
 function run() {
     return __awaiter(this, void 0, void 0, function* () {
+        const authorToTwistMap = createAuthorToTwistMap(AUTHOR_TO_TWIST_MAPPING);
         const pullRequests = yield (0, pullrequest_1.fetchPullRequests)(GITHUB_TOKEN, GITHUB_REPO_OWNER, GITHUB_REPO);
         for (const pullRequest of pullRequests) {
             if ((0, pullrequest_1.shouldIgnore)(pullRequest, IGNORE_AUTHORS, IGNORE_DRAFT_PRS, IGNORE_LABELS)) {
@@ -9575,7 +9577,7 @@ function run() {
             const remind = yield (0, pullrequest_1.isMissingReview)(pullRequest, REVIEW_TIME_MS, GITHUB_TOKEN, GITHUB_REPO_OWNER, GITHUB_REPO);
             if (remind) {
                 core.info(`Sending reminder`);
-                const response = yield (0, reminder_1.sendReminder)(pullRequest, REMINDER_MESSAGE, TWIST_URL);
+                const response = yield (0, reminder_1.sendReminder)(pullRequest, REMINDER_MESSAGE, TWIST_URL, authorToTwistMap);
                 const statusCode = response.message.statusCode;
                 if (statusCode >= 300) {
                     const message = response.message.statusMessage;
@@ -9585,6 +9587,27 @@ function run() {
             }
         }
     });
+}
+/**
+ * Takes in a string in the format `username:twist_user_id,username:twist_user_id` (eg `bob:123,jane:456`)
+ * and parses it into a map of GitHub usernames to their associated Twist User IDs.
+ *
+ * @param input The string to process.
+ * @returns A map of GitHub usernames to their associated Twist User IDs.
+ */
+function createAuthorToTwistMap(input) {
+    const mapping = {};
+    if (!input) {
+        return mapping;
+    }
+    for (const individual of input.split(',')) {
+        const [username, twistUserID] = individual.split(':');
+        if (!username || !twistUserID) {
+            continue;
+        }
+        mapping[username] = parseInt(twistUserID);
+    }
+    return mapping;
 }
 run().catch((error) => core.setFailed(error.message));
 
@@ -9824,22 +9847,29 @@ const http_client_1 = __nccwpck_require__(6255);
  * @param twistUrl The integration link for Twist used to post the message to a thread / channel
  * @returns Awaitable http post response
  */
-function sendReminder(pullRequest, messageTemplate, twistUrl) {
+function sendReminder(pullRequest, messageTemplate, twistUrl, authorToTwistMapping) {
     return __awaiter(this, void 0, void 0, function* () {
-        const httpClient = new http_client_1.HttpClient();
-        const reviewers = pullRequest.requested_reviewers.map((rr) => `${rr.login}`).join(', ');
+        const recipients = [];
+        const reviewers = pullRequest.requested_reviewers
+            .map((rr) => {
+            const twistUserID = authorToTwistMapping[rr.login];
+            if (twistUserID) {
+                recipients.push(twistUserID);
+                return `[${rr.login}](twist-mention://${twistUserID})`;
+            }
+            return `${rr.login}`;
+        })
+            .join(', ');
         const message = messageTemplate
             .replace('%reviewer%', reviewers)
             .replace('%pr_number%', pullRequest.number.toString())
             .replace('%pr_title%', pullRequest.title)
             .replace('%pr_url%', pullRequest.html_url);
-        const data = {
+        const httpClient = new http_client_1.HttpClient();
+        return httpClient.post(twistUrl, JSON.stringify({
             content: message,
-        };
-        const headers = {
-            'content-type': 'application/json',
-        };
-        return httpClient.post(twistUrl, JSON.stringify(data), headers);
+            recipients: recipients,
+        }), { 'content-type': 'application/json' });
     });
 }
 exports.sendReminder = sendReminder;
