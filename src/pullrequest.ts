@@ -29,27 +29,40 @@ export async function fetchPullRequests(
  * Decide whether to ignore this pull request and not send any reminders about it.
  * Uses the collection of authors to determine whether it should be ignored.
  *
- * @param pullRequest The PR being processed
+ * @param pullRequest The PR being processed.
  * @param ignoreAuthors
  *     A list of usernames, if the PR was created by any of these authors we will ignore it.
- * @returns True if we should ignore the PR, otherwise false
+ * @param ignoreDraftPRs If true any PR in draft state will be ignored.
+ * @param ignoreLabels A list of labels, if the PR has any of these attached it will be ignored.
+ * @returns True if we should ignore the PR, otherwise false.
  */
 export function shouldIgnore(
     pullRequest: PullRequest,
     ignoreAuthors: string,
-    excludeDraftPRs: boolean,
+    ignoreDraftPRs: boolean,
+    ignoreLabels: string,
 ): boolean {
     if (pullRequest.requested_reviewers.length === 0) {
         return true
     }
-    const ignoreAuthorsArray = ignoreAuthors.split(',').map((author) => author.trim())
+    const ignoreAuthorsArray = splitStringList(ignoreAuthors)
 
     if (ignoreAuthorsArray.includes(pullRequest.user.login)) {
         return true
     }
 
-    if (excludeDraftPRs && pullRequest.draft) {
+    if (ignoreDraftPRs && pullRequest.draft) {
         return true
+    }
+
+    if (pullRequest.labels) {
+        const ignoreLabelsArray = splitStringList(ignoreLabels)
+
+        for (const labelOnPR of pullRequest.labels) {
+            if (ignoreLabelsArray.includes(labelOnPR.name)) {
+                return true
+            }
+        }
     }
 
     return false
@@ -159,4 +172,8 @@ function isAfterReviewDeadline(
     }
 
     return true
+}
+
+function splitStringList(input: string): Array<string> {
+    return input.split(',').map((item) => item.trim())
 }
