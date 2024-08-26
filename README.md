@@ -45,7 +45,7 @@ jobs:
 |ignore_authors|no|`tom, renovate`|Usernames of PR creators who's PRs will be ignored|
 |ignore_draft_prs|no|`false`|Whether we should ignore draft PRs when checking reviews, defaults to false|
 |ignore_labels|no|`do not merge, blocked`|If provided any PRs with these labels will skip the review reminder check|
-|ignore_prs_with_failing_checks|no|`false`|If the PR has any failing status checks, ignore it|
+|ignore_prs_with_failing_checks|no|`false`|If the PR has any pending or failing status checks, ignore it|
 
 ## Development
 
