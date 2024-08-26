@@ -9565,8 +9565,8 @@ function run() {
                 continue;
             }
             if (IGNORE_PRS_WITH_FAILING_CHECKS) {
-                const prPassingStatusChecks = yield (0, pullrequest_1.isPRPassingStatusChecks)(GITHUB_TOKEN, GITHUB_REPO_OWNER, GITHUB_REPO, pullRequest);
-                if (prPassingStatusChecks === false) {
+                const prFailingStatusChecks = yield (0, pullrequest_1.isPRFailingStatusChecks)(GITHUB_TOKEN, GITHUB_REPO_OWNER, GITHUB_REPO, pullRequest);
+                if (prFailingStatusChecks) {
                     core.info(`Ignoring #${pullRequest.number} "${pullRequest.title} as the status checks are failing"`);
                     continue;
                 }
@@ -9629,7 +9629,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.isMissingReview = exports.isPRPassingStatusChecks = exports.shouldIgnore = exports.fetchPullRequests = void 0;
+exports.isMissingReview = exports.isPRFailingStatusChecks = exports.shouldIgnore = exports.fetchPullRequests = void 0;
 const github = __importStar(__nccwpck_require__(5438));
 /**
  * Get a list of all currently open pull requests in a repository
@@ -9685,14 +9685,16 @@ function shouldIgnore(pullRequest, ignoreAuthors, ignoreDraftPRs, ignoreLabels) 
 }
 exports.shouldIgnore = shouldIgnore;
 /**
- * Returns whether the passed in PR has all it's status checks passing.
+ * Returns whether the provided PR is failing it's status checks
  * @param gitHubToken The token used to authenticate with GitHub to access the repo
  * @param repoOwner The owner of the repo
  * @param repo The name of the repo
  * @param pullRequest The pull request to check.
- * @returns True if the status checks are passing, false if they are in progress or failing.
+ * @returns
+ *     True if any status checks are in error or failing state,
+ *     false if checks are pending or have succeeded.
  */
-function isPRPassingStatusChecks(gitHubToken, repoOwner, repo, pullRequest) {
+function isPRFailingStatusChecks(gitHubToken, repoOwner, repo, pullRequest) {
     return __awaiter(this, void 0, void 0, function* () {
         const octokit = github.getOctokit(gitHubToken);
         const { data } = yield octokit.rest.repos.getCombinedStatusForRef({
@@ -9701,10 +9703,10 @@ function isPRPassingStatusChecks(gitHubToken, repoOwner, repo, pullRequest) {
             ref: pullRequest.head.ref,
         });
         // Possible values are `success,pending,error,failure`
-        return data.state === 'success';
+        return ['error', 'failure'].includes(data.state);
     });
 }
-exports.isPRPassingStatusChecks = isPRPassingStatusChecks;
+exports.isPRFailingStatusChecks = isPRFailingStatusChecks;
 /**
  * Identifies whether the PR being passed in has not had any review activity in the last 24 hours.
  *
