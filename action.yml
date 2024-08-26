@@ -19,10 +19,13 @@ inputs:
   token:
     description: 'GitHub token'
     required: true
-  exclude_draft_prs:
-    description: 'Whether we should exclude draft PRs when checking for pending reviews'
+  ignore_draft_prs:
+    description: 'Whether we should ignore draft PRs when checking for pending reviews'
     required: true
     default: false
+  ignore_labels:
+    description: 'If provided any PRs with these labels will skip the review reminder check'
+    required: false
 runs:
   using: 'node20'
   main: 'dist/index.js'
