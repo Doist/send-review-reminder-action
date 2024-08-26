@@ -42,6 +42,7 @@ jobs:
 |token|yes|`adbc12431414`|The token for accessing the GitHub API to query the state of the PRs in a repo|
 |ignore_authors|no|`tom, renovate`|Usernames of PR creators who's PRs will be ignored|
 |exclude_draft_prs|no|`false`|Whether we should exclude draft PRs when checking reviews, defaults to false|
+|exclude_labels|no|`do not merge, blocked`|If provided any PRs with these labels will skip the review reminder check|
 
 ## Development
 
