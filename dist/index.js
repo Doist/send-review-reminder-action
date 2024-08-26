@@ -9553,6 +9553,9 @@ const TWIST_URL = core.getInput('twist_url', { required: true });
 const REMINDER_MESSAGE = core.getInput('message', { required: true });
 const IGNORE_DRAFT_PRS = core.getBooleanInput('ignore_draft_prs', { required: true });
 const IGNORE_LABELS = core.getInput('ignore_labels', { required: false });
+const IGNORE_PRS_WITH_FAILING_CHECKS = core.getBooleanInput('ignore_prs_with_failing_checks', {
+    required: true,
+});
 function run() {
     return __awaiter(this, void 0, void 0, function* () {
         const pullRequests = yield (0, pullrequest_1.fetchPullRequests)(GITHUB_TOKEN, GITHUB_REPO_OWNER, GITHUB_REPO);
@@ -9560,6 +9563,13 @@ function run() {
             if ((0, pullrequest_1.shouldIgnore)(pullRequest, IGNORE_AUTHORS, IGNORE_DRAFT_PRS, IGNORE_LABELS)) {
                 core.info(`Ignoring #${pullRequest.number} "${pullRequest.title}"`);
                 continue;
+            }
+            if (IGNORE_PRS_WITH_FAILING_CHECKS) {
+                const prPassingStatusChecks = yield (0, pullrequest_1.isPRPassingStatusChecks)(GITHUB_TOKEN, GITHUB_REPO_OWNER, GITHUB_REPO, pullRequest);
+                if (prPassingStatusChecks === false) {
+                    core.info(`Ignoring #${pullRequest.number} "${pullRequest.title} as the status checks are failing"`);
+                    continue;
+                }
             }
             core.info(`Checking #${pullRequest.number} "${pullRequest.title}"`);
             const remind = yield (0, pullrequest_1.isMissingReview)(pullRequest, REVIEW_TIME_MS, GITHUB_TOKEN, GITHUB_REPO_OWNER, GITHUB_REPO);
@@ -9619,7 +9629,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.isMissingReview = exports.shouldIgnore = exports.fetchPullRequests = void 0;
+exports.isMissingReview = exports.isPRPassingStatusChecks = exports.shouldIgnore = exports.fetchPullRequests = void 0;
 const github = __importStar(__nccwpck_require__(5438));
 /**
  * Get a list of all currently open pull requests in a repository
@@ -9674,6 +9684,27 @@ function shouldIgnore(pullRequest, ignoreAuthors, ignoreDraftPRs, ignoreLabels) 
     return false;
 }
 exports.shouldIgnore = shouldIgnore;
+/**
+ * Returns whether the passed in PR has all it's status checks passing.
+ * @param gitHubToken The token used to authenticate with GitHub to access the repo
+ * @param repoOwner The owner of the repo
+ * @param repo The name of the repo
+ * @param pullRequest The pull request to check.
+ * @returns True if the status checks are passing, false if they are in progress or failing.
+ */
+function isPRPassingStatusChecks(gitHubToken, repoOwner, repo, pullRequest) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const octokit = github.getOctokit(gitHubToken);
+        const { data } = yield octokit.rest.repos.getCombinedStatusForRef({
+            owner: repoOwner,
+            repo,
+            ref: pullRequest.head.ref,
+        });
+        // Possible values are `success,pending,error,failure`
+        return data.state === 'success';
+    });
+}
+exports.isPRPassingStatusChecks = isPRPassingStatusChecks;
 /**
  * Identifies whether the PR being passed in has not had any review activity in the last 24 hours.
  *

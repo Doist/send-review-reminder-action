@@ -26,6 +26,10 @@ inputs:
   ignore_labels:
     description: 'If provided any PRs with these labels will skip the review reminder check'
     required: false
+  ignore_prs_with_failing_checks:
+    description: 'If the PR has any failing status checks, ignore it'
+    required: true
+    default: false
 runs:
   using: 'node20'
   main: 'dist/index.js'

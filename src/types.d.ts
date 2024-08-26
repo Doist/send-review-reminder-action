@@ -9,6 +9,11 @@ type PullRequestLabel = {
     name: string
 }
 
+/** The head refernece for the PR (eg the branch reference) */
+type PullRequestHead = {
+    ref: string
+}
+
 /** Details of a pending pull request on GitHub */
 type PullRequest = {
     /** PR number */
@@ -25,6 +30,8 @@ type PullRequest = {
     draft?: boolean
     /** Collection of labels associated with the PR */
     labels: PullRequestLabel[] | undefined
+    /** Details on the branch the PR is coming from */
+    head: PullRequestHead
 }
 
 /** Result expected from our GraphQL request to GitHub for PR details */

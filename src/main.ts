@@ -1,7 +1,12 @@
 import * as core from '@actions/core'
 import * as github from '@actions/github'
 
-import { fetchPullRequests, isMissingReview, shouldIgnore } from './pullrequest'
+import {
+    fetchPullRequests,
+    isMissingReview,
+    isPRPassingStatusChecks,
+    shouldIgnore,
+} from './pullrequest'
 import { sendReminder } from './reminder'
 
 const GITHUB_REPO_OWNER = github.context.repo.owner
@@ -14,6 +19,9 @@ const TWIST_URL = core.getInput('twist_url', { required: true })
 const REMINDER_MESSAGE = core.getInput('message', { required: true })
 const IGNORE_DRAFT_PRS = core.getBooleanInput('ignore_draft_prs', { required: true })
 const IGNORE_LABELS = core.getInput('ignore_labels', { required: false })
+const IGNORE_PRS_WITH_FAILING_CHECKS = core.getBooleanInput('ignore_prs_with_failing_checks', {
+    required: true,
+})
 
 async function run(): Promise<void> {
     const pullRequests = await fetchPullRequests(GITHUB_TOKEN, GITHUB_REPO_OWNER, GITHUB_REPO)
@@ -21,6 +29,22 @@ async function run(): Promise<void> {
         if (shouldIgnore(pullRequest, IGNORE_AUTHORS, IGNORE_DRAFT_PRS, IGNORE_LABELS)) {
             core.info(`Ignoring #${pullRequest.number} "${pullRequest.title}"`)
             continue
+        }
+
+        if (IGNORE_PRS_WITH_FAILING_CHECKS) {
+            const prPassingStatusChecks = await isPRPassingStatusChecks(
+                GITHUB_TOKEN,
+                GITHUB_REPO_OWNER,
+                GITHUB_REPO,
+                pullRequest,
+            )
+
+            if (prPassingStatusChecks === false) {
+                core.info(
+                    `Ignoring #${pullRequest.number} "${pullRequest.title} as the status checks are failing"`,
+                )
+                continue
+            }
         }
 
         core.info(`Checking #${pullRequest.number} "${pullRequest.title}"`)
