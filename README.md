@@ -37,17 +37,17 @@ jobs:
 
 ### Parameters
 
-|name|required?|example|description|
-|----|---------|-------|-----------|
-|review_time_ms|yes|`86400000`|The time in milliseconds a PR has to wait before a reminder will be sen, example is 24 hours|
-|message|yes|`%reviewer%, `<br/>`please review `<br/>`[#%pr_number% - %pr_title%](%pr_url%)`|The reminder message to send, takes 4 parameters for string interpolation: `%reviewer%`, `%pr_number%`, `%pr_title%` and `%pr_url%`|
-|twist_url|yes|`https://twist.com/api/v3/integration_incoming/`<br/>`post_data?`<br/>`install_id=[install id]`<br/>`&install_token=[install token]`|The installed integration url for posting a message to a Twist thread|
-|token|yes|`adbc12431414`|The token for accessing the GitHub API to query the state of the PRs in a repo|
-|ignore_authors|no|`tom, renovate`|Usernames of PR creators who's PRs will be ignored|
-|ignore_draft_prs|no|`false`|Whether we should ignore draft PRs when checking reviews, defaults to false|
-|ignore_labels|no|`do not merge, blocked`|If provided any PRs with these labels will skip the review reminder check|
-|ignore_prs_with_failing_checks|no|`false`|If the PR has any failing or errored status checks, ignore it|
-|author_to_twist_mapping|no|`github_username_a:123,github_username_b:456`|A mapping of each possible reviewer's GitHub username to their associated Twist user id. If provided it will ensure the correct user is notified in Twist when a review is overdue|
+|name|required?|description|
+|----|---------|-----------|
+|review_time_ms|yes|The time in milliseconds a PR has to wait before a reminder will be sen, example is 24 hours|
+|message|yes|The reminder message to send, takes 4 parameters for string interpolation: `%reviewer%`, `%pr_number%`, `%pr_title%` and `%pr_url%`|
+|twist_url|yes|The installed integration url for posting a message to a Twist thread|
+|token|yes|The token for accessing the GitHub API to query the state of the PRs in a repo|
+|ignore_authors|no|Usernames of PR creators who's PRs will be ignored|
+|ignore_draft_prs|no|Whether we should ignore draft PRs when checking reviews, defaults to false|
+|ignore_labels|no|If provided any PRs with these labels will skip the review reminder check|
+|ignore_prs_with_failing_checks|no|If the PR has any failing or errored status checks, ignore it|
+|author_to_twist_mapping|no|A mapping of each possible reviewer's GitHub username to their associated Twist user id. If provided it will ensure the correct user is notified in Twist when a review is overdue|
 
 ## Development
 
