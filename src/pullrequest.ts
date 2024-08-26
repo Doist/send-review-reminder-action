@@ -69,14 +69,16 @@ export function shouldIgnore(
 }
 
 /**
- * Returns whether the passed in PR has all it's status checks passing.
+ * Returns whether the provided PR is failing it's status checks
  * @param gitHubToken The token used to authenticate with GitHub to access the repo
  * @param repoOwner The owner of the repo
  * @param repo The name of the repo
  * @param pullRequest The pull request to check.
- * @returns True if the status checks are passing, false if they are in progress or failing.
+ * @returns
+ *     True if any status checks are in error or failing state,
+ *     false if checks are pending or have succeeded.
  */
-export async function isPRPassingStatusChecks(
+export async function isPRFailingStatusChecks(
     gitHubToken: string,
     repoOwner: string,
     repo: string,
@@ -90,7 +92,7 @@ export async function isPRPassingStatusChecks(
     })
 
     // Possible values are `success,pending,error,failure`
-    return data.state === 'success'
+    return ['error', 'failure'].includes(data.state)
 }
 
 /**

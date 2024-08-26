@@ -4,7 +4,7 @@ import * as github from '@actions/github'
 import {
     fetchPullRequests,
     isMissingReview,
-    isPRPassingStatusChecks,
+    isPRFailingStatusChecks,
     shouldIgnore,
 } from './pullrequest'
 import { sendReminder } from './reminder'
@@ -32,14 +32,14 @@ async function run(): Promise<void> {
         }
 
         if (IGNORE_PRS_WITH_FAILING_CHECKS) {
-            const prPassingStatusChecks = await isPRPassingStatusChecks(
+            const prFailingStatusChecks = await isPRFailingStatusChecks(
                 GITHUB_TOKEN,
                 GITHUB_REPO_OWNER,
                 GITHUB_REPO,
                 pullRequest,
             )
 
-            if (prPassingStatusChecks === false) {
+            if (prFailingStatusChecks) {
                 core.info(
                     `Ignoring #${pullRequest.number} "${pullRequest.title} as the status checks are failing"`,
                 )
