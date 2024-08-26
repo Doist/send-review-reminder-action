@@ -9597,6 +9597,9 @@ function run() {
  */
 function createAuthorToTwistMap(input) {
     const mapping = {};
+    if (!input) {
+        return mapping;
+    }
     for (const individual of input.split(',')) {
         const [username, twistUserID] = individual.split(':');
         if (!username || !twistUserID) {

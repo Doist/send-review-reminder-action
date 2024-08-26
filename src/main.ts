@@ -85,6 +85,10 @@ async function run(): Promise<void> {
 function createAuthorToTwistMap(input: string): { [id: string]: number } {
     const mapping: { [id: string]: number } = {}
 
+    if (!input) {
+        return mapping
+    }
+
     for (const individual of input.split(',')) {
         const [username, twistUserID] = individual.split(':')
 
