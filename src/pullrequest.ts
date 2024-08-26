@@ -69,6 +69,31 @@ export function shouldIgnore(
 }
 
 /**
+ * Returns whether the passed in PR has all it's status checks passing.
+ * @param gitHubToken The token used to authenticate with GitHub to access the repo
+ * @param repoOwner The owner of the repo
+ * @param repo The name of the repo
+ * @param pullRequest The pull request to check.
+ * @returns True if the status checks are passing, false if they are in progress or failing.
+ */
+export async function isPRPassingStatusChecks(
+    gitHubToken: string,
+    repoOwner: string,
+    repo: string,
+    pullRequest: PullRequest,
+): Promise<boolean> {
+    const octokit = github.getOctokit(gitHubToken)
+    const { data } = await octokit.rest.repos.getCombinedStatusForRef({
+        owner: repoOwner,
+        repo,
+        ref: pullRequest.head.ref,
+    })
+
+    // Possible values are `success,pending,error,failure`
+    return data.state === 'success'
+}
+
+/**
  * Identifies whether the PR being passed in has not had any review activity in the last 24 hours.
  *
  * @param pullRequest The pull request to check
