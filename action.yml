@@ -31,7 +31,7 @@ inputs:
     required: true
     default: false
   author_to_twist_mapping:
-    description: 'A mapping of each possible reviewer's GitHub username to their associated Twist user id. If provided it will ensure the correct user is notified in Twist when a review is overdue'
+    description: 'A mapping of each possible reviewers GitHub username to their associated Twist user id. If provided it will ensure the correct user is notified in Twist when a review is overdue'
     required: false
 runs:
   using: 'node20'
