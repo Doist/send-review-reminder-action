@@ -31,6 +31,7 @@ jobs:
           review_time_ms: 86400000 # 1 day in milliseconds
           twist_url: 'https://twist.com/api/v3/integration_incoming/post_data?install_id=[install id]&install_token=[install token]'
           token: ${{ secrets.DOIST_BOT_TOKEN }}
+          author_to_twist_mapping: 'github_username_a:123,github_username_b:456'
 
 ```
 
@@ -46,6 +47,7 @@ jobs:
 |ignore_draft_prs|no|`false`|Whether we should ignore draft PRs when checking reviews, defaults to false|
 |ignore_labels|no|`do not merge, blocked`|If provided any PRs with these labels will skip the review reminder check|
 |ignore_prs_with_failing_checks|no|`false`|If the PR has any failing or errored status checks, ignore it|
+|author_to_twist_mapping|no|`github_username_a:123,github_username_b:456`|A mapping of each possible reviewer's GitHub username to their associated Twist user id. If provided it will ensure the correct user is notified in Twist when a review is overdue|
 
 ## Development
 
