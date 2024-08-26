@@ -4,6 +4,11 @@ type User = {
     login: string
 }
 
+/** A label associated with a PR */
+type PullRequestLabel = {
+    name: string
+}
+
 /** Details of a pending pull request on GitHub */
 type PullRequest = {
     /** PR number */
@@ -18,6 +23,8 @@ type PullRequest = {
     requested_reviewers: User[]
     /** Whether the PR is currently in draft mode */
     draft?: boolean
+    /** Collection of labels associated with the PR */
+    labels: PullRequestLabel[] | undefined
 }
 
 /** Result expected from our GraphQL request to GitHub for PR details */

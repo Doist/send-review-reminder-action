@@ -45,7 +45,7 @@ export function shouldIgnore(
     if (pullRequest.requested_reviewers.length === 0) {
         return true
     }
-    const ignoreAuthorsArray = ignoreAuthors.split(',').map((author) => author.trim())
+    const ignoreAuthorsArray = splitStringList(ignoreAuthors)
 
     if (ignoreAuthorsArray.includes(pullRequest.user.login)) {
         return true
@@ -53,6 +53,16 @@ export function shouldIgnore(
 
     if (ignoreDraftPRs && pullRequest.draft) {
         return true
+    }
+
+    if (pullRequest.labels) {
+        const ignoreLabelsArray = splitStringList(ignoreLabels)
+
+        for (const labelOnPR of pullRequest.labels) {
+            if (ignoreLabelsArray.includes(labelOnPR.name)) {
+                return true
+            }
+        }
     }
 
     return false
@@ -162,4 +172,8 @@ function isAfterReviewDeadline(
     }
 
     return true
+}
+
+function splitStringList(input: string): Array<string> {
+    return input.split(',').map((item) => item.trim())
 }
