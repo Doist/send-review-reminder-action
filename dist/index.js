@@ -9795,6 +9795,8 @@ function getLatestCreatedAtTime(nodes) {
  * based on the time between when the review was requested, and whether
  * there has been any review activity since then.
  *
+ * Only counts weekdays, excludes weekends when checking if 24 hours have passed.
+ *
  * @param reviewRequestTime The latest time the creator requested a person review the PR
  * @param reviewTime The latest time the PR was reviewed
  * @param reviewDeadline The total time in ms before a PR is considered stale
@@ -9806,7 +9808,12 @@ function isAfterReviewDeadline(reviewRequestTime, reviewTime, reviewDeadline) {
         return false;
     }
     const now = new Date().getTime();
-    if (now - reviewRequestTime < reviewDeadline) {
+    let adjustedReviewDeadline = reviewDeadline;
+    if (isWeekend(new Date(reviewRequestTime + reviewDeadline))) {
+        // Push the deadline past the weekend (shift forward by 2 days)
+        adjustedReviewDeadline = reviewDeadline + 172800000;
+    }
+    if (now - reviewRequestTime < adjustedReviewDeadline) {
         // There is still time for review.
         return false;
     }
@@ -9818,6 +9825,9 @@ function isAfterReviewDeadline(reviewRequestTime, reviewTime, reviewDeadline) {
 }
 function splitStringList(input) {
     return input.split(',').map((item) => item.trim());
+}
+function isWeekend(date) {
+    return date.getDay() % 6 === 0;
 }
 
 
