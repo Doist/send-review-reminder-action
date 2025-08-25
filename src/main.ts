@@ -23,6 +23,7 @@ const IGNORE_LABELS = core.getInput('ignore_labels', { required: false })
 const IGNORE_PRS_WITH_FAILING_CHECKS = core.getBooleanInput('ignore_prs_with_failing_checks', {
     required: true,
 })
+const IGNORE_REVIEW_BOTS = core.getInput('ignore_review_bots', { required: false })
 
 async function run(): Promise<void> {
     const authorToTwistMap = createAuthorToTwistMap(AUTHOR_TO_TWIST_MAPPING)
@@ -56,6 +57,7 @@ async function run(): Promise<void> {
             GITHUB_TOKEN,
             GITHUB_REPO_OWNER,
             GITHUB_REPO,
+            IGNORE_REVIEW_BOTS,
         )
         if (remind) {
             core.info(`Sending reminder`)

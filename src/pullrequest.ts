@@ -111,6 +111,7 @@ export async function isMissingReview(
     gitHubToken: string,
     repoOwner: string,
     repo: string,
+    ignoreReviewBots: string,
 ): Promise<boolean> {
     const octokit = github.getOctokit(gitHubToken)
     const response = await octokit.graphql<GraphQlPullRequestResponse>(
@@ -131,6 +132,10 @@ export async function isMissingReview(
                   __typename
                   ... on PullRequestReview {
                     createdAt
+                    author {
+                      login
+                    }
+                    state
                   }
                 }
               }
@@ -148,9 +153,44 @@ export async function isMissingReview(
     const latestReviewRequestTime = getLatestCreatedAtTime(
         response.repository.pullRequest.timelineItems.nodes,
     )
-    const latestReviewTime = getLatestCreatedAtTime(response.repository.pullRequest.reviews.nodes)
+    const filteredReviews = filterBotReviews(
+        response.repository.pullRequest.reviews.nodes,
+        ignoreReviewBots,
+    )
+    const latestReviewTime = getLatestCreatedAtTime(filteredReviews)
 
     return isAfterReviewDeadline(latestReviewRequestTime, latestReviewTime, reviewDeadline)
+}
+
+/**
+ * Filters out reviews from specified authors, particularly bot reviews that should not
+ * affect human review reminders.
+ *
+ * @param reviewNodes The collection of review nodes from GraphQL
+ * @param ignoreReviewBots Comma-separated list of bot authors to ignore
+ * @returns Filtered review nodes excluding bot comments
+ */
+function filterBotReviews(reviewNodes: GraphQlNode[], ignoreReviewBots: string): GraphQlNode[] {
+    if (!ignoreReviewBots) {
+        return reviewNodes
+    }
+
+    const ignoreBotsArray = splitStringList(ignoreReviewBots)
+
+    return reviewNodes.filter((node) => {
+        // If no author info, keep the review (shouldn't happen but better safe than sorry.)
+        if (!node.author?.login) {
+            return true
+        }
+
+        // If not from an ignored bot, keep the review.
+        if (!ignoreBotsArray.includes(node.author.login)) {
+            return true
+        }
+
+        // If from ignored bot but not a COMMENTED review, keep it.
+        return node.state !== 'COMMENTED'
+    })
 }
 
 /**
