@@ -9557,6 +9557,7 @@ const IGNORE_LABELS = core.getInput('ignore_labels', { required: false });
 const IGNORE_PRS_WITH_FAILING_CHECKS = core.getBooleanInput('ignore_prs_with_failing_checks', {
     required: true,
 });
+const IGNORE_REVIEW_BOTS = core.getInput('ignore_review_bots', { required: false });
 function run() {
     return __awaiter(this, void 0, void 0, function* () {
         const authorToTwistMap = createAuthorToTwistMap(AUTHOR_TO_TWIST_MAPPING);
@@ -9574,7 +9575,7 @@ function run() {
                 }
             }
             core.info(`Checking #${pullRequest.number} "${pullRequest.title}"`);
-            const remind = yield (0, pullrequest_1.isMissingReview)(pullRequest, REVIEW_TIME_MS, GITHUB_TOKEN, GITHUB_REPO_OWNER, GITHUB_REPO);
+            const remind = yield (0, pullrequest_1.isMissingReview)(pullRequest, REVIEW_TIME_MS, GITHUB_TOKEN, GITHUB_REPO_OWNER, GITHUB_REPO, IGNORE_REVIEW_BOTS);
             if (remind) {
                 core.info(`Sending reminder`);
                 const response = yield (0, reminder_1.sendReminder)(pullRequest, REMINDER_MESSAGE, TWIST_URL, authorToTwistMap);
@@ -9740,7 +9741,7 @@ exports.isPRFailingStatusChecks = isPRFailingStatusChecks;
  * @param repo The name of the repo
  * @returns An awaitable bool indicating whether this PR is missing a review.
  */
-function isMissingReview(pullRequest, reviewDeadline, gitHubToken, repoOwner, repo) {
+function isMissingReview(pullRequest, reviewDeadline, gitHubToken, repoOwner, repo, ignoreReviewBots) {
     return __awaiter(this, void 0, void 0, function* () {
         const octokit = github.getOctokit(gitHubToken);
         const response = yield octokit.graphql(`
@@ -9760,6 +9761,10 @@ function isMissingReview(pullRequest, reviewDeadline, gitHubToken, repoOwner, re
                   __typename
                   ... on PullRequestReview {
                     createdAt
+                    author {
+                      login
+                    }
+                    state
                   }
                 }
               }
@@ -9772,11 +9777,39 @@ function isMissingReview(pullRequest, reviewDeadline, gitHubToken, repoOwner, re
             number: pullRequest.number,
         });
         const latestReviewRequestTime = getLatestCreatedAtTime(response.repository.pullRequest.timelineItems.nodes);
-        const latestReviewTime = getLatestCreatedAtTime(response.repository.pullRequest.reviews.nodes);
+        const filteredReviews = filterBotReviews(response.repository.pullRequest.reviews.nodes, ignoreReviewBots);
+        const latestReviewTime = getLatestCreatedAtTime(filteredReviews);
         return isAfterReviewDeadline(latestReviewRequestTime, latestReviewTime, reviewDeadline);
     });
 }
 exports.isMissingReview = isMissingReview;
+/**
+ * Filters out reviews from specified authors, particularly bot reviews that should not
+ * affect human review reminders.
+ *
+ * @param reviewNodes The collection of review nodes from GraphQL
+ * @param ignoreReviewBots Comma-separated list of bot authors to ignore
+ * @returns Filtered review nodes excluding bot comments
+ */
+function filterBotReviews(reviewNodes, ignoreReviewBots) {
+    if (!ignoreReviewBots) {
+        return reviewNodes;
+    }
+    const ignoreBotsArray = splitStringList(ignoreReviewBots);
+    return reviewNodes.filter((node) => {
+        var _a;
+        // If no author info, keep the review (shouldn't happen but better safe than sorry.)
+        if (!((_a = node.author) === null || _a === void 0 ? void 0 : _a.login)) {
+            return true;
+        }
+        // If not from an ignored bot, keep the review.
+        if (!ignoreBotsArray.includes(node.author.login)) {
+            return true;
+        }
+        // If from ignored bot but not a COMMENTED review, keep it.
+        return node.state !== 'COMMENTED';
+    });
+}
 /**
  * Receives a collection of events from the PR and identifies what the time of the last event was.
  *

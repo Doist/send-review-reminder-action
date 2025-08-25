@@ -51,6 +51,10 @@ type GraphQlPullRequestResponse = {
 type GraphQlNode = {
     __typename: string
     createdAt: string
+    author?: {
+        login: string
+    }
+    state?: string
 }
 
 export { GraphQlNode, GraphQlPullRequestResponse, PullRequest, User }

@@ -33,6 +33,10 @@ inputs:
   author_to_twist_mapping:
     description: 'A mapping of each possible reviewers GitHub username to their associated Twist user id. If provided it will ensure the correct user is notified in Twist when a review is overdue'
     required: false
+  ignore_review_bots:
+    description: 'Ignore reviews from these bot authors when checking for pending reviews. Useful for filtering out bot reviews that should not stop human review reminders.'
+    required: false
+    default: 'github-actions[bot]'
 runs:
   using: 'node20'
   main: 'dist/index.js'
