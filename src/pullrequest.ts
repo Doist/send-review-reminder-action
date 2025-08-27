@@ -42,9 +42,6 @@ export function shouldIgnore(
     ignoreDraftPRs: boolean,
     ignoreLabels: string,
 ): boolean {
-    if (pullRequest.requested_reviewers.length === 0) {
-        return true
-    }
     const ignoreAuthorsArray = splitStringList(ignoreAuthors)
 
     if (ignoreAuthorsArray.includes(pullRequest.user.login)) {
@@ -153,6 +150,12 @@ export async function isMissingReview(
     const latestReviewRequestTime = getLatestCreatedAtTime(
         response.repository.pullRequest.timelineItems.nodes,
     )
+
+    // If there are no review requests at all, don't send reminders
+    if (!latestReviewRequestTime) {
+        return false
+    }
+
     const filteredReviews = filterBotReviews(
         response.repository.pullRequest.reviews.nodes,
         ignoreReviewBots,

@@ -9687,9 +9687,6 @@ exports.fetchPullRequests = fetchPullRequests;
  * @returns True if we should ignore the PR, otherwise false.
  */
 function shouldIgnore(pullRequest, ignoreAuthors, ignoreDraftPRs, ignoreLabels) {
-    if (pullRequest.requested_reviewers.length === 0) {
-        return true;
-    }
     const ignoreAuthorsArray = splitStringList(ignoreAuthors);
     if (ignoreAuthorsArray.includes(pullRequest.user.login)) {
         return true;
@@ -9777,6 +9774,10 @@ function isMissingReview(pullRequest, reviewDeadline, gitHubToken, repoOwner, re
             number: pullRequest.number,
         });
         const latestReviewRequestTime = getLatestCreatedAtTime(response.repository.pullRequest.timelineItems.nodes);
+        // If there are no review requests at all, don't send reminders
+        if (!latestReviewRequestTime) {
+            return false;
+        }
         const filteredReviews = filterBotReviews(response.repository.pullRequest.reviews.nodes, ignoreReviewBots);
         const latestReviewTime = getLatestCreatedAtTime(filteredReviews);
         return isAfterReviewDeadline(latestReviewRequestTime, latestReviewTime, reviewDeadline);

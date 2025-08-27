@@ -36,7 +36,7 @@ inputs:
   ignore_review_bots:
     description: 'Ignore reviews from these bot authors when checking for pending reviews. Useful for filtering out bot reviews that should not stop human review reminders.'
     required: false
-    default: 'github-actions[bot]'
+    default: 'github-actions'
 runs:
   using: 'node20'
   main: 'dist/index.js'
