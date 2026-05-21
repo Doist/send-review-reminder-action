@@ -3,7 +3,12 @@ import * as github from '@actions/github'
 import type { GraphQlNode, GraphQlPullRequestResponse, PullRequest } from './types'
 
 /**
- * Get a list of all currently open pull requests in a repository
+ * Get a list of all currently open pull requests in a repository.
+ *
+ * Uses `octokit.paginate` to walk every page of results. Without this the
+ * underlying `pulls.list` endpoint only returns the first page (30 PRs by
+ * default, newest first), so older PRs silently fall out of scope once enough
+ * newer ones are open and never get a review reminder.
  *
  * @param gitHubToken The token used to authenticate with GitHub to access the repo
  * @param repoOwner The owner of the repo
@@ -16,13 +21,14 @@ export async function fetchPullRequests(
     repo: string,
 ): Promise<PullRequest[]> {
     const octokit = github.getOctokit(gitHubToken)
-    const { data } = await octokit.rest.pulls.list({
+    const data = await octokit.paginate(octokit.rest.pulls.list, {
         owner: repoOwner,
         repo,
         state: 'open',
+        per_page: 100,
     })
 
-    return data as PullRequest[]
+    return data as unknown as PullRequest[]
 }
 
 /**

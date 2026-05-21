@@ -9656,7 +9656,12 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.isMissingReview = exports.isPRFailingStatusChecks = exports.shouldIgnore = exports.fetchPullRequests = void 0;
 const github = __importStar(__nccwpck_require__(5438));
 /**
- * Get a list of all currently open pull requests in a repository
+ * Get a list of all currently open pull requests in a repository.
+ *
+ * Uses `octokit.paginate` to walk every page of results. Without this the
+ * underlying `pulls.list` endpoint only returns the first page (30 PRs by
+ * default, newest first), so older PRs silently fall out of scope once enough
+ * newer ones are open and never get a review reminder.
  *
  * @param gitHubToken The token used to authenticate with GitHub to access the repo
  * @param repoOwner The owner of the repo
@@ -9666,10 +9671,11 @@ const github = __importStar(__nccwpck_require__(5438));
 function fetchPullRequests(gitHubToken, repoOwner, repo) {
     return __awaiter(this, void 0, void 0, function* () {
         const octokit = github.getOctokit(gitHubToken);
-        const { data } = yield octokit.rest.pulls.list({
+        const data = yield octokit.paginate(octokit.rest.pulls.list, {
             owner: repoOwner,
             repo,
             state: 'open',
+            per_page: 100,
         });
         return data;
     });
