@@ -9784,36 +9784,43 @@ function isMissingReview(pullRequest, reviewDeadline, gitHubToken, repoOwner, re
         if (!latestReviewRequestTime) {
             return false;
         }
-        const filteredReviews = filterBotReviews(response.repository.pullRequest.reviews.nodes, ignoreReviewBots);
+        const filteredReviews = filterNonReviewComments(response.repository.pullRequest.reviews.nodes, ignoreReviewBots, pullRequest.user.login);
         const latestReviewTime = getLatestCreatedAtTime(filteredReviews);
         return isAfterReviewDeadline(latestReviewRequestTime, latestReviewTime, reviewDeadline);
     });
 }
 exports.isMissingReview = isMissingReview;
 /**
- * Filters out reviews from specified authors, particularly bot reviews that should not
- * affect human review reminders.
+ * Filters out reviews that should not count as genuine review activity, so they don't
+ * suppress reminders for a PR that is still waiting on a human review.
+ *
+ * Drops two kinds of `COMMENTED` reviews:
+ *   - Comments from ignored review bots (e.g. doistbot's automated review summary).
+ *   - Comments from the PR author themselves. Replying to inline comments on your own
+ *     PR registers as a `COMMENTED` review under your account, but it isn't a review of
+ *     the PR and shouldn't silence the reminder.
+ *
+ * `APPROVED` / `CHANGES_REQUESTED` reviews are always kept, even from these authors.
  *
  * @param reviewNodes The collection of review nodes from GraphQL
- * @param ignoreReviewBots Comma-separated list of bot authors to ignore
- * @returns Filtered review nodes excluding bot comments
+ * @param ignoreReviewBots Comma-separated list of bot authors whose comments to ignore
+ * @param prAuthor The login of the PR author, whose own comments to ignore
+ * @returns Filtered review nodes excluding bot and self comments
  */
-function filterBotReviews(reviewNodes, ignoreReviewBots) {
-    if (!ignoreReviewBots) {
-        return reviewNodes;
-    }
-    const ignoreBotsArray = splitStringList(ignoreReviewBots);
+function filterNonReviewComments(reviewNodes, ignoreReviewBots, prAuthor) {
+    const ignoredCommentAuthors = new Set(ignoreReviewBots ? splitStringList(ignoreReviewBots) : []);
+    ignoredCommentAuthors.add(prAuthor);
     return reviewNodes.filter((node) => {
         var _a;
         // If no author info, keep the review (shouldn't happen but better safe than sorry.)
         if (!((_a = node.author) === null || _a === void 0 ? void 0 : _a.login)) {
             return true;
         }
-        // If not from an ignored bot, keep the review.
-        if (!ignoreBotsArray.includes(node.author.login)) {
+        // If not from an ignored author, keep the review.
+        if (!ignoredCommentAuthors.has(node.author.login)) {
             return true;
         }
-        // If from ignored bot but not a COMMENTED review, keep it.
+        // If from an ignored author but not a COMMENTED review, keep it.
         return node.state !== 'COMMENTED';
     });
 }
