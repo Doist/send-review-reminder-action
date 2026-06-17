@@ -7,9 +7,23 @@ Any PRs found that have been waiting too long will have a reminder sent to a
 Comms thread on their behalf via the Todoist Comms API.
 
 To post to Comms the action authenticates against Todoist's OAuth token endpoint
-using the password grant (integrations are no longer supported in the Comms API),
-then posts the reminder as a comment. The OAuth credentials must belong to a
-confidential Todoist application authorized for the `comms:` scopes.
+using the password grant, then posts the reminder as a comment. The OAuth
+credentials must belong to a confidential Todoist application authorized for the
+`comms:` scopes.
+
+## Todoist integration (Client ID & Secret)
+
+The `client_id` and `client_secret` come from a **Todoist Integration installed
+in the account of the user who will be posting to Comms** (the same account given
+by `todoist_username` / `todoist_password`). These integrations are managed at
+<https://app.todoist.com/app/settings/integrations/app-management>.
+
+The default posting user (`dev@doist.com`) **already has this integration
+installed**, so you can reuse it rather than creating a new one:
+
+- **Integration name:** Todoist Comms Send Message
+- **Client ID:** `c170a394efef460c8f8f943db89c6a86`
+- **Manage it here:** <https://app.todoist.com/app/settings/integrations/app-management/app/127294>
 
 ## Usage:
 
@@ -50,8 +64,8 @@ jobs:
 |----|---------|-----------|
 |review_time_ms|yes|The time in milliseconds a PR has to wait before a reminder will be sen, example is 24 hours|
 |message|yes|The reminder message to send, takes 4 parameters for string interpolation: `%reviewer%`, `%pr_number%`, `%pr_title%` and `%pr_url%`|
-|client_id|yes|OAuth client id of a confidential Todoist application authorized for the `comms:` scopes|
-|client_secret|yes|OAuth client secret for the Todoist application|
+|client_id|yes|OAuth client id of the Todoist Integration installed in the posting user's account (see [Todoist integration](#todoist-integration-client-id--secret))|
+|client_secret|yes|OAuth client secret for that Todoist Integration|
 |todoist_username|yes|Todoist account email used to authenticate via the OAuth password grant|
 |todoist_password|yes|Todoist account password used to authenticate via the OAuth password grant|
 |thread_id|yes|The Comms thread id to post reminder messages into|
