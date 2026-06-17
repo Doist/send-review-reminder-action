@@ -1,6 +1,7 @@
 import * as core from '@actions/core'
 import * as github from '@actions/github'
 
+import { getCommsAccessToken } from './comms'
 import {
     fetchPullRequests,
     isMissingReview,
@@ -15,9 +16,13 @@ const GITHUB_REPO = github.context.repo.repo
 const GITHUB_TOKEN = core.getInput('token', { required: true })
 const REVIEW_TIME_MS = parseInt(core.getInput('review_time_ms', { required: true }))
 const IGNORE_AUTHORS = core.getInput('ignore_authors', { required: false })
-const TWIST_URL = core.getInput('twist_url', { required: true })
+const CLIENT_ID = core.getInput('client_id', { required: true })
+const CLIENT_SECRET = core.getInput('client_secret', { required: true })
+const TODOIST_USERNAME = core.getInput('todoist_username', { required: true })
+const TODOIST_PASSWORD = core.getInput('todoist_password', { required: true })
+const THREAD_ID = core.getInput('thread_id', { required: true })
 const REMINDER_MESSAGE = core.getInput('message', { required: true })
-const AUTHOR_TO_TWIST_MAPPING = core.getInput('author_to_twist_mapping', { required: false })
+const AUTHOR_TO_COMMS_MAPPING = core.getInput('author_to_comms_mapping', { required: false })
 const IGNORE_DRAFT_PRS = core.getBooleanInput('ignore_draft_prs', { required: true })
 const IGNORE_LABELS = core.getInput('ignore_labels', { required: false })
 const IGNORE_PRS_WITH_FAILING_CHECKS = core.getBooleanInput('ignore_prs_with_failing_checks', {
@@ -26,8 +31,12 @@ const IGNORE_PRS_WITH_FAILING_CHECKS = core.getBooleanInput('ignore_prs_with_fai
 const IGNORE_REVIEW_BOTS = core.getInput('ignore_review_bots', { required: false })
 
 async function run(): Promise<void> {
-    const authorToTwistMap = createAuthorToTwistMap(AUTHOR_TO_TWIST_MAPPING)
+    const authorToCommsMap = createAuthorToCommsMap(AUTHOR_TO_COMMS_MAPPING)
     const pullRequests = await fetchPullRequests(GITHUB_TOKEN, GITHUB_REPO_OWNER, GITHUB_REPO)
+
+    // Fetched lazily on the first due reminder so quiet runs make no auth call.
+    let accessToken: string | null = null
+
     for (const pullRequest of pullRequests) {
         if (shouldIgnore(pullRequest, IGNORE_AUTHORS, IGNORE_DRAFT_PRS, IGNORE_LABELS)) {
             core.info(`Ignoring #${pullRequest.number} "${pullRequest.title}"`)
@@ -61,16 +70,25 @@ async function run(): Promise<void> {
         )
         if (remind) {
             core.info(`Sending reminder`)
+            if (accessToken === null) {
+                accessToken = await getCommsAccessToken(
+                    CLIENT_ID,
+                    CLIENT_SECRET,
+                    TODOIST_USERNAME,
+                    TODOIST_PASSWORD,
+                )
+            }
             const response = await sendReminder(
                 pullRequest,
                 REMINDER_MESSAGE,
-                TWIST_URL,
-                authorToTwistMap,
+                accessToken,
+                THREAD_ID,
+                authorToCommsMap,
             )
             const statusCode = response.message.statusCode as number
             if (statusCode >= 300) {
                 const message = response.message.statusMessage as string
-                core.setFailed(`Cannot post message to Twist: ${statusCode} - ${message}`)
+                core.setFailed(`Cannot post message to Comms: ${statusCode} - ${message}`)
                 return
             }
         }
@@ -78,13 +96,13 @@ async function run(): Promise<void> {
 }
 
 /**
- * Takes in a string in the format `username:twist_user_id,username:twist_user_id` (eg `bob:123,jane:456`)
- * and parses it into a map of GitHub usernames to their associated Twist User IDs.
+ * Takes in a string in the format `username:comms_user_id,username:comms_user_id` (eg `bob:123,jane:456`)
+ * and parses it into a map of GitHub usernames to their associated Comms User IDs.
  *
  * @param input The string to process.
- * @returns A map of GitHub usernames to their associated Twist User IDs.
+ * @returns A map of GitHub usernames to their associated Comms User IDs.
  */
-function createAuthorToTwistMap(input: string): { [id: string]: number } {
+function createAuthorToCommsMap(input: string): { [id: string]: number } {
     const mapping: { [id: string]: number } = {}
 
     if (!input) {
@@ -92,13 +110,13 @@ function createAuthorToTwistMap(input: string): { [id: string]: number } {
     }
 
     for (const individual of input.split(',')) {
-        const [username, twistUserID] = individual.split(':')
+        const [username, commsUserID] = individual.split(':')
 
-        if (!username || !twistUserID) {
+        if (!username || !commsUserID) {
             continue
         }
 
-        mapping[username] = parseInt(twistUserID)
+        mapping[username] = parseInt(commsUserID)
     }
 
     return mapping
