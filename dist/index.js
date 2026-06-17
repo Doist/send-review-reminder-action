@@ -9502,6 +9502,157 @@ function wrappy (fn, cb) {
 
 /***/ }),
 
+/***/ 4631:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+"use strict";
+
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.generateCommentId = exports.postComment = exports.getCommsAccessToken = void 0;
+const http_client_1 = __nccwpck_require__(6255);
+/** Host used to exchange credentials for an OAuth access token. */
+const TOKEN_HOST = 'https://app.todoist.com';
+/** Host of the Comms API used to post comments. */
+const COMMS_HOST = 'https://comms.todoist.com';
+/** Comms identifies its protected resource (audience) by this URL. */
+const COMMS_RESOURCE = 'https://comms.todoist.com';
+/** Scopes required to post a reminder comment into a Comms thread. */
+const COMMS_SCOPE = 'comms:content:write,comms:messages:write';
+/** Base58 alphabet (Bitcoin-style: no 0, O, I or l). */
+const BASE58_ALPHABET = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
+/**
+ * Authenticates against Todoist's OAuth token endpoint using the password grant
+ * and returns a comms-scoped bearer token.
+ *
+ * Integrations no longer exist in the Comms API, so instead of a baked-in
+ * integration URL we exchange real credentials for a short-lived token. The
+ * `resource` parameter is what makes the issued token a comms-audience token.
+ *
+ * @param clientId OAuth client id of a confidential Todoist application.
+ * @param clientSecret OAuth client secret for that application.
+ * @param username Todoist account email.
+ * @param password Todoist account password.
+ * @returns The access token string to use as a bearer credential.
+ */
+function getCommsAccessToken(clientId, clientSecret, username, password) {
+    var _a;
+    return __awaiter(this, void 0, void 0, function* () {
+        const body = new URLSearchParams({
+            grant_type: 'password',
+            client_id: clientId,
+            client_secret: clientSecret,
+            username: username,
+            password: password,
+            scope: COMMS_SCOPE,
+            resource: COMMS_RESOURCE,
+        }).toString();
+        const httpClient = new http_client_1.HttpClient();
+        const response = yield httpClient.post(`${TOKEN_HOST}/oauth/access_token`, body, {
+            'content-type': 'application/x-www-form-urlencoded',
+        });
+        const responseBody = yield response.readBody();
+        const statusCode = (_a = response.message.statusCode) !== null && _a !== void 0 ? _a : 0;
+        if (statusCode >= 300) {
+            throw new Error(`Failed to obtain Comms access token: ${statusCode} - ${responseBody}`);
+        }
+        const parsed = JSON.parse(responseBody);
+        if (!parsed.access_token) {
+            throw new Error('Comms access token response did not contain an access_token');
+        }
+        return parsed.access_token;
+    });
+}
+exports.getCommsAccessToken = getCommsAccessToken;
+/**
+ * Posts a comment into a Comms thread.
+ *
+ * @param token A comms-scoped bearer token from {@link getCommsAccessToken}.
+ * @param threadId The Comms thread to post the comment into.
+ * @param content The rendered reminder message.
+ * @param recipients Numeric Comms user ids to notify.
+ * @returns Awaitable http post response.
+ */
+function postComment(token, threadId, content, recipients) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const httpClient = new http_client_1.HttpClient();
+        return httpClient.post(`${COMMS_HOST}/api/v1/comments/add`, JSON.stringify({
+            content: content,
+            recipients: recipients,
+            thread_id: threadId,
+            // Client-generated id, used by Comms as the comment's stable identifier.
+            id: generateCommentId(),
+        }), {
+            'content-type': 'application/json',
+            authorization: `Bearer ${token}`,
+        });
+    });
+}
+exports.postComment = postComment;
+/**
+ * Generates a client-side comment id: a UUIDv7-style 16-byte value (48-bit
+ * millisecond timestamp, version 7, variant bits, and random bytes) encoded
+ * using the base58 alphabet.
+ *
+ * @returns A base58-encoded comment id.
+ */
+function generateCommentId() {
+    var _a;
+    const ts = Date.now();
+    function randomByte() {
+        return Math.floor(Math.random() * 256);
+    }
+    // 6 big-endian timestamp bytes, then version (0111) + variant (10) + random.
+    const bytes = [
+        Math.floor(ts / 1099511627776) & 255,
+        Math.floor(ts / 4294967296) & 255,
+        Math.floor(ts / 16777216) & 255,
+        Math.floor(ts / 65536) & 255,
+        Math.floor(ts / 256) & 255,
+        ts & 255,
+        112 | (randomByte() & 15),
+        randomByte(),
+        128 | (randomByte() & 63),
+        randomByte(),
+        randomByte(),
+        randomByte(),
+        randomByte(),
+        randomByte(),
+        randomByte(),
+        randomByte(),
+    ];
+    // Big-endian base58 encoding of the 16-byte value.
+    const digits = [0];
+    for (const byte of bytes) {
+        let carry = byte;
+        for (let j = 0; j < digits.length; j++) {
+            carry += ((_a = digits[j]) !== null && _a !== void 0 ? _a : 0) << 8;
+            digits[j] = carry % 58;
+            carry = (carry / 58) | 0;
+        }
+        while (carry > 0) {
+            digits.push(carry % 58);
+            carry = (carry / 58) | 0;
+        }
+    }
+    return digits
+        .reverse()
+        .map((index) => BASE58_ALPHABET[index])
+        .join('');
+}
+exports.generateCommentId = generateCommentId;
+
+
+/***/ }),
+
 /***/ 399:
 /***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
@@ -9542,6 +9693,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 const core = __importStar(__nccwpck_require__(2186));
 const github = __importStar(__nccwpck_require__(5438));
+const comms_1 = __nccwpck_require__(4631);
 const pullrequest_1 = __nccwpck_require__(5885);
 const reminder_1 = __nccwpck_require__(3081);
 const GITHUB_REPO_OWNER = github.context.repo.owner;
@@ -9549,9 +9701,13 @@ const GITHUB_REPO = github.context.repo.repo;
 const GITHUB_TOKEN = core.getInput('token', { required: true });
 const REVIEW_TIME_MS = parseInt(core.getInput('review_time_ms', { required: true }));
 const IGNORE_AUTHORS = core.getInput('ignore_authors', { required: false });
-const TWIST_URL = core.getInput('twist_url', { required: true });
+const CLIENT_ID = core.getInput('client_id', { required: true });
+const CLIENT_SECRET = core.getInput('client_secret', { required: true });
+const TODOIST_USERNAME = core.getInput('todoist_username', { required: true });
+const TODOIST_PASSWORD = core.getInput('todoist_password', { required: true });
+const THREAD_ID = core.getInput('thread_id', { required: true });
 const REMINDER_MESSAGE = core.getInput('message', { required: true });
-const AUTHOR_TO_TWIST_MAPPING = core.getInput('author_to_twist_mapping', { required: false });
+const AUTHOR_TO_COMMS_MAPPING = core.getInput('author_to_comms_mapping', { required: false });
 const IGNORE_DRAFT_PRS = core.getBooleanInput('ignore_draft_prs', { required: true });
 const IGNORE_LABELS = core.getInput('ignore_labels', { required: false });
 const IGNORE_PRS_WITH_FAILING_CHECKS = core.getBooleanInput('ignore_prs_with_failing_checks', {
@@ -9560,8 +9716,10 @@ const IGNORE_PRS_WITH_FAILING_CHECKS = core.getBooleanInput('ignore_prs_with_fai
 const IGNORE_REVIEW_BOTS = core.getInput('ignore_review_bots', { required: false });
 function run() {
     return __awaiter(this, void 0, void 0, function* () {
-        const authorToTwistMap = createAuthorToTwistMap(AUTHOR_TO_TWIST_MAPPING);
+        const authorToCommsMap = createAuthorToCommsMap(AUTHOR_TO_COMMS_MAPPING);
         const pullRequests = yield (0, pullrequest_1.fetchPullRequests)(GITHUB_TOKEN, GITHUB_REPO_OWNER, GITHUB_REPO);
+        // Fetched lazily on the first due reminder so quiet runs make no auth call.
+        let accessToken = null;
         for (const pullRequest of pullRequests) {
             if ((0, pullrequest_1.shouldIgnore)(pullRequest, IGNORE_AUTHORS, IGNORE_DRAFT_PRS, IGNORE_LABELS)) {
                 core.info(`Ignoring #${pullRequest.number} "${pullRequest.title}"`);
@@ -9578,11 +9736,14 @@ function run() {
             const remind = yield (0, pullrequest_1.isMissingReview)(pullRequest, REVIEW_TIME_MS, GITHUB_TOKEN, GITHUB_REPO_OWNER, GITHUB_REPO, IGNORE_REVIEW_BOTS);
             if (remind) {
                 core.info(`Sending reminder`);
-                const response = yield (0, reminder_1.sendReminder)(pullRequest, REMINDER_MESSAGE, TWIST_URL, authorToTwistMap);
+                if (accessToken === null) {
+                    accessToken = yield (0, comms_1.getCommsAccessToken)(CLIENT_ID, CLIENT_SECRET, TODOIST_USERNAME, TODOIST_PASSWORD);
+                }
+                const response = yield (0, reminder_1.sendReminder)(pullRequest, REMINDER_MESSAGE, accessToken, THREAD_ID, authorToCommsMap);
                 const statusCode = response.message.statusCode;
                 if (statusCode >= 300) {
                     const message = response.message.statusMessage;
-                    core.setFailed(`Cannot post message to Twist: ${statusCode} - ${message}`);
+                    core.setFailed(`Cannot post message to Comms: ${statusCode} - ${message}`);
                     return;
                 }
             }
@@ -9590,23 +9751,23 @@ function run() {
     });
 }
 /**
- * Takes in a string in the format `username:twist_user_id,username:twist_user_id` (eg `bob:123,jane:456`)
- * and parses it into a map of GitHub usernames to their associated Twist User IDs.
+ * Takes in a string in the format `username:comms_user_id,username:comms_user_id` (eg `bob:123,jane:456`)
+ * and parses it into a map of GitHub usernames to their associated Comms User IDs.
  *
  * @param input The string to process.
- * @returns A map of GitHub usernames to their associated Twist User IDs.
+ * @returns A map of GitHub usernames to their associated Comms User IDs.
  */
-function createAuthorToTwistMap(input) {
+function createAuthorToCommsMap(input) {
     const mapping = {};
     if (!input) {
         return mapping;
     }
     for (const individual of input.split(',')) {
-        const [username, twistUserID] = individual.split(':');
-        if (!username || !twistUserID) {
+        const [username, commsUserID] = individual.split(':');
+        if (!username || !commsUserID) {
             continue;
         }
-        mapping[username] = parseInt(twistUserID);
+        mapping[username] = parseInt(commsUserID);
     }
     return mapping;
 }
@@ -9896,23 +10057,24 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.sendReminder = void 0;
-const http_client_1 = __nccwpck_require__(6255);
+const comms_1 = __nccwpck_require__(4631);
 /**
- * Sends a reminder about the stalled pull request to a Twist thread
- * @param pullRequest The PR to send the reminer about
+ * Sends a reminder about the stalled pull request to a Comms thread.
+ * @param pullRequest The PR to send the reminder about
  * @param messageTemplate The message template to fill with details of the review
- * @param twistUrl The integration link for Twist used to post the message to a thread / channel
+ * @param token A comms-scoped bearer token used to authenticate the Comms API call
+ * @param threadId The Comms thread to post the reminder into
+ * @param authorToCommsMapping GitHub username to Comms user id mapping used to notify reviewers
  * @returns Awaitable http post response
  */
-function sendReminder(pullRequest, messageTemplate, twistUrl, authorToTwistMapping) {
+function sendReminder(pullRequest, messageTemplate, token, threadId, authorToCommsMapping) {
     return __awaiter(this, void 0, void 0, function* () {
         const recipients = [];
         const reviewers = pullRequest.requested_reviewers
             .map((rr) => {
-            const twistUserID = authorToTwistMapping[rr.login];
-            if (twistUserID) {
-                recipients.push(twistUserID);
-                return `[${rr.login}](twist-mention://${twistUserID})`;
+            const commsUserID = authorToCommsMapping[rr.login];
+            if (commsUserID) {
+                recipients.push(commsUserID);
             }
             return `${rr.login}`;
         })
@@ -9922,11 +10084,7 @@ function sendReminder(pullRequest, messageTemplate, twistUrl, authorToTwistMappi
             .replace('%pr_number%', pullRequest.number.toString())
             .replace('%pr_title%', pullRequest.title)
             .replace('%pr_url%', pullRequest.html_url);
-        const httpClient = new http_client_1.HttpClient();
-        return httpClient.post(twistUrl, JSON.stringify({
-            content: message,
-            recipients: recipients,
-        }), { 'content-type': 'application/json' });
+        return (0, comms_1.postComment)(token, threadId, message, recipients);
     });
 }
 exports.sendReminder = sendReminder;

@@ -2,7 +2,7 @@
     "name": "send-review-reminder-action",
     "version": "0.0.0",
     "private": false,
-    "description": "Reminds about pending GitHub pull request review on twist.com",
+    "description": "Reminds about pending GitHub pull request reviews via the Todoist Comms API",
     "prettier": "@doist/prettier-config",
     "scripts": {
         "build": "tsc",

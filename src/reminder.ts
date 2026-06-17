@@ -1,28 +1,31 @@
-import { HttpClient, HttpClientResponse } from '@actions/http-client'
+import { postComment } from './comms'
 
+import type { HttpClientResponse } from '@actions/http-client'
 import type { PullRequest } from './types'
 
 /**
- * Sends a reminder about the stalled pull request to a Twist thread
- * @param pullRequest The PR to send the reminer about
+ * Sends a reminder about the stalled pull request to a Comms thread.
+ * @param pullRequest The PR to send the reminder about
  * @param messageTemplate The message template to fill with details of the review
- * @param twistUrl The integration link for Twist used to post the message to a thread / channel
+ * @param token A comms-scoped bearer token used to authenticate the Comms API call
+ * @param threadId The Comms thread to post the reminder into
+ * @param authorToCommsMapping GitHub username to Comms user id mapping used to notify reviewers
  * @returns Awaitable http post response
  */
 export async function sendReminder(
     pullRequest: PullRequest,
     messageTemplate: string,
-    twistUrl: string,
-    authorToTwistMapping: { [id: string]: number },
+    token: string,
+    threadId: string,
+    authorToCommsMapping: { [id: string]: number },
 ): Promise<HttpClientResponse> {
     const recipients: Array<number> = []
     const reviewers = pullRequest.requested_reviewers
         .map((rr) => {
-            const twistUserID = authorToTwistMapping[rr.login]
+            const commsUserID = authorToCommsMapping[rr.login]
 
-            if (twistUserID) {
-                recipients.push(twistUserID)
-                return `[${rr.login}](twist-mention://${twistUserID})`
+            if (commsUserID) {
+                recipients.push(commsUserID)
             }
             return `${rr.login}`
         })
@@ -34,13 +37,5 @@ export async function sendReminder(
         .replace('%pr_title%', pullRequest.title)
         .replace('%pr_url%', pullRequest.html_url)
 
-    const httpClient = new HttpClient()
-    return httpClient.post(
-        twistUrl,
-        JSON.stringify({
-            content: message,
-            recipients: recipients,
-        }),
-        { 'content-type': 'application/json' },
-    )
+    return postComment(token, threadId, message, recipients)
 }
