@@ -9517,8 +9517,12 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.generateCommentId = exports.postComment = exports.getCommsAccessToken = void 0;
+exports.postComment = exports.getCommsAccessToken = void 0;
 const http_client_1 = __nccwpck_require__(6255);
+const node_crypto_1 = __nccwpck_require__(6005);
+/** Socket timeout (ms) applied to all network calls so a hung connection
+ * doesn't burn CI minutes on the library's 3-minute default. */
+const SOCKET_TIMEOUT_MS = 30000;
 /** Host used to exchange credentials for an OAuth access token. */
 const TOKEN_HOST = 'https://app.todoist.com';
 /** Host of the Comms API used to post comments. */
@@ -9555,7 +9559,9 @@ function getCommsAccessToken(clientId, clientSecret, username, password) {
             scope: COMMS_SCOPE,
             resource: COMMS_RESOURCE,
         }).toString();
-        const httpClient = new http_client_1.HttpClient();
+        const httpClient = new http_client_1.HttpClient('send-review-reminder', [], {
+            socketTimeout: SOCKET_TIMEOUT_MS,
+        });
         const response = yield httpClient.post(`${TOKEN_HOST}/oauth/access_token`, body, {
             'content-type': 'application/x-www-form-urlencoded',
         });
@@ -9583,7 +9589,9 @@ exports.getCommsAccessToken = getCommsAccessToken;
  */
 function postComment(token, threadId, content, recipients) {
     return __awaiter(this, void 0, void 0, function* () {
-        const httpClient = new http_client_1.HttpClient();
+        const httpClient = new http_client_1.HttpClient('send-review-reminder', [], {
+            socketTimeout: SOCKET_TIMEOUT_MS,
+        });
         return httpClient.post(`${COMMS_HOST}/api/v1/comments/add`, JSON.stringify({
             content: content,
             recipients: recipients,
@@ -9607,9 +9615,8 @@ exports.postComment = postComment;
 function generateCommentId() {
     var _a;
     const ts = Date.now();
-    function randomByte() {
-        return Math.floor(Math.random() * 256);
-    }
+    // 10 cryptographically-random bytes; the layout below consumes them in order.
+    const rnd = (0, node_crypto_1.randomBytes)(10);
     // 6 big-endian timestamp bytes, then version (0111) + variant (10) + random.
     const bytes = [
         Math.floor(ts / 1099511627776) & 255,
@@ -9618,16 +9625,16 @@ function generateCommentId() {
         Math.floor(ts / 65536) & 255,
         Math.floor(ts / 256) & 255,
         ts & 255,
-        112 | (randomByte() & 15),
-        randomByte(),
-        128 | (randomByte() & 63),
-        randomByte(),
-        randomByte(),
-        randomByte(),
-        randomByte(),
-        randomByte(),
-        randomByte(),
-        randomByte(),
+        112 | (rnd.readUInt8(0) & 15),
+        rnd.readUInt8(1),
+        128 | (rnd.readUInt8(2) & 63),
+        rnd.readUInt8(3),
+        rnd.readUInt8(4),
+        rnd.readUInt8(5),
+        rnd.readUInt8(6),
+        rnd.readUInt8(7),
+        rnd.readUInt8(8),
+        rnd.readUInt8(9),
     ];
     // Big-endian base58 encoding of the 16-byte value.
     const digits = [0];
@@ -9648,7 +9655,6 @@ function generateCommentId() {
         .map((index) => BASE58_ALPHABET[index])
         .join('');
 }
-exports.generateCommentId = generateCommentId;
 
 
 /***/ }),
@@ -10153,6 +10159,14 @@ module.exports = require("https");
 
 "use strict";
 module.exports = require("net");
+
+/***/ }),
+
+/***/ 6005:
+/***/ ((module) => {
+
+"use strict";
+module.exports = require("node:crypto");
 
 /***/ }),
 

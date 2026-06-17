@@ -1,4 +1,9 @@
 import { HttpClient, HttpClientResponse } from '@actions/http-client'
+import { randomBytes } from 'node:crypto'
+
+/** Socket timeout (ms) applied to all network calls so a hung connection
+ * doesn't burn CI minutes on the library's 3-minute default. */
+const SOCKET_TIMEOUT_MS = 30000
 
 /** Host used to exchange credentials for an OAuth access token. */
 const TOKEN_HOST = 'https://app.todoist.com'
@@ -46,7 +51,9 @@ export async function getCommsAccessToken(
         resource: COMMS_RESOURCE,
     }).toString()
 
-    const httpClient = new HttpClient()
+    const httpClient = new HttpClient('send-review-reminder', [], {
+        socketTimeout: SOCKET_TIMEOUT_MS,
+    })
     const response = await httpClient.post(`${TOKEN_HOST}/oauth/access_token`, body, {
         'content-type': 'application/x-www-form-urlencoded',
     })
@@ -80,7 +87,9 @@ export async function postComment(
     content: string,
     recipients: Array<number>,
 ): Promise<HttpClientResponse> {
-    const httpClient = new HttpClient()
+    const httpClient = new HttpClient('send-review-reminder', [], {
+        socketTimeout: SOCKET_TIMEOUT_MS,
+    })
     return httpClient.post(
         `${COMMS_HOST}/api/v1/comments/add`,
         JSON.stringify({
@@ -104,12 +113,11 @@ export async function postComment(
  *
  * @returns A base58-encoded comment id.
  */
-export function generateCommentId(): string {
+function generateCommentId(): string {
     const ts = Date.now()
 
-    function randomByte(): number {
-        return Math.floor(Math.random() * 256)
-    }
+    // 10 cryptographically-random bytes; the layout below consumes them in order.
+    const rnd = randomBytes(10)
 
     // 6 big-endian timestamp bytes, then version (0111) + variant (10) + random.
     const bytes = [
@@ -119,16 +127,16 @@ export function generateCommentId(): string {
         Math.floor(ts / 65536) & 255,
         Math.floor(ts / 256) & 255,
         ts & 255,
-        112 | (randomByte() & 15),
-        randomByte(),
-        128 | (randomByte() & 63),
-        randomByte(),
-        randomByte(),
-        randomByte(),
-        randomByte(),
-        randomByte(),
-        randomByte(),
-        randomByte(),
+        112 | (rnd.readUInt8(0) & 15),
+        rnd.readUInt8(1),
+        128 | (rnd.readUInt8(2) & 63),
+        rnd.readUInt8(3),
+        rnd.readUInt8(4),
+        rnd.readUInt8(5),
+        rnd.readUInt8(6),
+        rnd.readUInt8(7),
+        rnd.readUInt8(8),
+        rnd.readUInt8(9),
     ]
 
     // Big-endian base58 encoding of the 16-byte value.
