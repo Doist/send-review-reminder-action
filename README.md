@@ -15,15 +15,15 @@ credentials must belong to a confidential Todoist application authorized for the
 
 The `client_id` and `client_secret` come from a **Todoist Integration installed
 in the account of the user who will be posting to Comms** (the same account given
-by `todoist_username` / `todoist_password`). These integrations are managed at
+by `todoist_username` / `todoist_password`). The integration must be authorized
+for the `comms:` scopes. These integrations are managed at
 <https://app.todoist.com/app/settings/integrations/app-management>.
 
-The default posting user (`dev@doist.com`) **already has this integration
-installed**, so you can reuse it rather than creating a new one:
-
-- **Integration name:** Todoist Comms Send Message
-- **Client ID:** `c170a394efef460c8f8f943db89c6a86`
-- **Manage it here:** <https://app.todoist.com/app/settings/integrations/app-management/app/127294>
+Doist maintainers: the shared posting account already has a suitable integration
+installed ("Todoist Comms Send Message") that you can reuse rather than creating a
+new one. Since this is a public repository, the specific client id, account, and
+integration link are not listed here — ask the team for the values and store them
+as GitHub secrets.
 
 ## Usage:
 
