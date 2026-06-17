@@ -9529,8 +9529,9 @@ const TOKEN_HOST = 'https://app.todoist.com';
 const COMMS_HOST = 'https://comms.todoist.com';
 /** Comms identifies its protected resource (audience) by this URL. */
 const COMMS_RESOURCE = 'https://comms.todoist.com';
-/** Scopes required to post a reminder comment into a Comms thread. */
-const COMMS_SCOPE = 'comms:content:write,comms:messages:write';
+/** Scope required to post a reminder comment into a Comms thread.
+ * The action only calls `comments/add`, which is covered by `comms:content:write`. */
+const COMMS_SCOPE = 'comms:content:write';
 /** Base58 alphabet (Bitcoin-style: no 0, O, I or l). */
 const BASE58_ALPHABET = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
 /**
