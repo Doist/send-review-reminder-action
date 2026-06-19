@@ -9,6 +9,12 @@ type PullRequestLabel = {
     name: string
 }
 
+/** A GitHub team a review can be requested from */
+type Team = {
+    /** Human-readable team name (e.g. "Backend Hero") */
+    name: string
+}
+
 /** The head refernece for the PR (eg the branch reference) */
 type PullRequestHead = {
     ref: string
@@ -26,6 +32,8 @@ type PullRequest = {
     html_url: string
     /** A list of users who a review has been requested from */
     requested_reviewers: User[]
+    /** A list of teams a review has been requested from */
+    requested_teams: Team[]
     /** Whether the PR is currently in draft mode */
     draft?: boolean
     /** Collection of labels associated with the PR */
@@ -57,4 +65,4 @@ type GraphQlNode = {
     state?: string
 }
 
-export { GraphQlNode, GraphQlPullRequestResponse, PullRequest, User }
+export { GraphQlNode, GraphQlPullRequestResponse, PullRequest, Team, User }
