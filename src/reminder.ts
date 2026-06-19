@@ -26,6 +26,7 @@ export async function sendReminder(
 
             if (commsUserID) {
                 recipients.push(commsUserID)
+                return `[${rr.login}](comms-mention://${commsUserID})`
             }
             return `${rr.login}`
         })

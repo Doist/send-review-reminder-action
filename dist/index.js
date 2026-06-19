@@ -10082,6 +10082,7 @@ function sendReminder(pullRequest, messageTemplate, token, threadId, authorToCom
             const commsUserID = authorToCommsMapping[rr.login];
             if (commsUserID) {
                 recipients.push(commsUserID);
+                return `[${rr.login}](comms-mention://${commsUserID})`;
             }
             return `${rr.login}`;
         })
