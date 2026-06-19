@@ -20,17 +20,21 @@ export async function sendReminder(
     authorToCommsMapping: { [id: string]: number },
 ): Promise<HttpClientResponse> {
     const recipients: Array<number> = []
-    const reviewers = pullRequest.requested_reviewers
-        .map((rr) => {
-            const commsUserID = authorToCommsMapping[rr.login]
+    const userReviewers = pullRequest.requested_reviewers.map((rr) => {
+        const commsUserID = authorToCommsMapping[rr.login]
 
-            if (commsUserID) {
-                recipients.push(commsUserID)
-                return `[${rr.login}](comms-mention://${commsUserID})`
-            }
-            return `${rr.login}`
-        })
-        .join(', ')
+        if (commsUserID) {
+            recipients.push(commsUserID)
+            return `[${rr.login}](comms-mention://${commsUserID})`
+        }
+        return `${rr.login}`
+    })
+
+    // Reviews can also be requested from a team (e.g. "Backend Hero") rather than
+    // an individual. Teams have no Comms user id, so they're listed as plain text.
+    const teamReviewers = (pullRequest.requested_teams ?? []).map((team) => team.name)
+
+    const reviewers = [...userReviewers, ...teamReviewers].join(', ')
 
     const message = messageTemplate
         .replace('%reviewer%', reviewers)

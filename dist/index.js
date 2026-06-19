@@ -10075,18 +10075,21 @@ const comms_1 = __nccwpck_require__(4631);
  * @returns Awaitable http post response
  */
 function sendReminder(pullRequest, messageTemplate, token, threadId, authorToCommsMapping) {
+    var _a;
     return __awaiter(this, void 0, void 0, function* () {
         const recipients = [];
-        const reviewers = pullRequest.requested_reviewers
-            .map((rr) => {
+        const userReviewers = pullRequest.requested_reviewers.map((rr) => {
             const commsUserID = authorToCommsMapping[rr.login];
             if (commsUserID) {
                 recipients.push(commsUserID);
                 return `[${rr.login}](comms-mention://${commsUserID})`;
             }
             return `${rr.login}`;
-        })
-            .join(', ');
+        });
+        // Reviews can also be requested from a team (e.g. "Backend Hero") rather than
+        // an individual. Teams have no Comms user id, so they're listed as plain text.
+        const teamReviewers = ((_a = pullRequest.requested_teams) !== null && _a !== void 0 ? _a : []).map((team) => team.name);
+        const reviewers = [...userReviewers, ...teamReviewers].join(', ');
         const message = messageTemplate
             .replace('%reviewer%', reviewers)
             .replace('%pr_number%', pullRequest.number.toString())
