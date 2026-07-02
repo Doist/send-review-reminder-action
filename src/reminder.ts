@@ -7,7 +7,7 @@ import type { PullRequest } from './types'
  * Sends a reminder about the stalled pull request to a Comms thread.
  * @param pullRequest The PR to send the reminder about
  * @param messageTemplate The message template to fill with details of the review
- * @param token A comms-scoped bearer token used to authenticate the Comms API call
+ * @param token A Todoist personal access token used to authenticate the Comms API call
  * @param threadId The Comms thread to post the reminder into
  * @param authorToCommsMapping GitHub username to Comms user id mapping used to notify reviewers
  * @returns Awaitable http post response

@@ -6,24 +6,11 @@ are expecting a review they haven't received in the specified timeframe.
 Any PRs found that have been waiting too long will have a reminder sent to a
 Comms thread on their behalf via the Todoist Comms API.
 
-To post to Comms the action authenticates against Todoist's OAuth token endpoint
-using the password grant, then posts the reminder as a comment. The OAuth
-credentials must belong to a confidential Todoist application authorized for the
-`comms:` scopes.
-
-## Todoist integration (Client ID & Secret)
-
-The `client_id` and `client_secret` come from a **Todoist Integration installed
-in the account of the user who will be posting to Comms** (the same account given
-by `todoist_username` / `todoist_password`). The integration must be authorized
-for the `comms:` scopes. These integrations are managed at
-<https://app.todoist.com/app/settings/integrations/app-management>.
-
-Doist maintainers: the shared posting account already has a suitable integration
-installed ("Todoist Comms Send Message") that you can reuse rather than creating a
-new one. Since this is a public repository, the specific client id, account, and
-integration link are not listed here — ask the team for the values and store them
-as GitHub secrets.
+To post to Comms the action authenticates with a **Todoist personal access
+token** belonging to the user who will post the reminders. Personal access
+tokens can be created at
+<https://app.todoist.com/app/settings/integrations/developer>. Store the token
+as a GitHub secret — tokens are easy to revoke and rotate if they ever leak.
 
 ## Usage:
 
@@ -48,10 +35,7 @@ jobs:
           ignore_labels: 'do not merge, blocked'
           ignore_prs_with_failing_checks: true
           review_time_ms: 86400000 # 1 day in milliseconds
-          client_id: ${{ secrets.client_id }}
-          client_secret: ${{ secrets.client_secret }}
-          todoist_username: ${{ secrets.todoist_username }}
-          todoist_password: ${{ secrets.todoist_password }}
+          todoist_access_token: ${{ secrets.todoist_access_token }}
           thread_id: ${{ secrets.thread_id }}
           token: ${{ secrets.DOIST_BOT_TOKEN }}
           author_to_comms_mapping: 'github_username_a:123,github_username_b:456'
@@ -64,10 +48,7 @@ jobs:
 |----|---------|-----------|
 |review_time_ms|yes|The time in milliseconds a PR has to wait before a reminder will be sen, example is 24 hours|
 |message|yes|The reminder message to send, takes 4 parameters for string interpolation: `%reviewer%`, `%pr_number%`, `%pr_title%` and `%pr_url%`|
-|client_id|yes|OAuth client id of the Todoist Integration installed in the posting user's account (see [Todoist integration](#todoist-integration-client-id--secret)). Provide via a GitHub secret|
-|client_secret|yes|OAuth client secret for that Todoist Integration. Provide via a GitHub secret|
-|todoist_username|yes|Todoist account email used to authenticate via the OAuth password grant. Provide via a GitHub secret|
-|todoist_password|yes|Todoist account password used to authenticate via the OAuth password grant|
+|todoist_access_token|yes|Todoist personal access token of the user who will post the reminders to Comms. Provide via a GitHub secret|
 |thread_id|yes|The Comms thread id to post reminder messages into|
 |token|yes|The token for accessing the GitHub API to query the state of the PRs in a repo|
 |ignore_authors|no|Usernames of PR creators who's PRs will be ignored|
@@ -84,3 +65,25 @@ Switch into this folder after checking out the repository, run `npm install` to 
 
 After applying your changes, run `npm run all`. It will check your code and compile a new version into the `dist` 
 folder.
+
+### Testing locally
+
+The `local-test/` folder contains two harnesses. Both read their configuration
+(including secrets) from `local-test/.env.local`, which is git-ignored — copy
+`local-test/.env.example` to `local-test/.env.local` and fill it in.
+
+To verify the Comms integration in isolation (posts a test comment into the
+configured thread using your `TODOIST_ACCESS_TOKEN`, no build needed):
+
+```shell
+node local-test/comms-smoke-test.mjs           # post a test comment
+node local-test/comms-smoke-test.mjs --dry-run # print the request without posting
+```
+
+To run the full built action exactly as GitHub Actions would (requires
+`npm run all` first; makes real GitHub API calls and, if any PR is overdue,
+a real Comms post):
+
+```shell
+./local-test/run-action-locally.sh
+```

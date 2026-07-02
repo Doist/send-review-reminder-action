@@ -9,17 +9,8 @@ inputs:
   ignore_authors:
     description: 'Ignore pull requests from those authors'
     required: false
-  client_id:
-    description: 'OAuth client id of the Todoist Integration installed in the posting user''s account (the "Todoist Comms Send Message" integration). Provide via a GitHub secret.'
-    required: true
-  client_secret:
-    description: 'OAuth client secret for the Todoist Integration ("Todoist Comms Send Message"). Provide via a GitHub secret.'
-    required: true
-  todoist_username:
-    description: 'Todoist account email used to authenticate via the OAuth password grant (e.g. dev@doist.com). Provide via a GitHub secret.'
-    required: true
-  todoist_password:
-    description: 'Todoist account password used to authenticate via the OAuth password grant'
+  todoist_access_token:
+    description: 'Todoist personal access token of the user who will post the reminders to Comms. Provide via a GitHub secret.'
     required: true
   thread_id:
     description: 'The Comms thread id to post reminder messages into'
