@@ -9,8 +9,8 @@ inputs:
   ignore_authors:
     description: 'Ignore pull requests from those authors'
     required: false
-  todoist_access_token:
-    description: 'Todoist personal access token of the user who will post the reminders to Comms. Provide via a GitHub secret.'
+  todoist_api_token:
+    description: 'Todoist API token of the user who will post the reminders to Comms. View and copy it at https://app.todoist.com/app/settings/integrations/developer. Provide via a GitHub secret.'
     required: true
   thread_id:
     description: 'The Comms thread id to post reminder messages into'

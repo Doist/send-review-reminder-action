@@ -6,9 +6,8 @@ are expecting a review they haven't received in the specified timeframe.
 Any PRs found that have been waiting too long will have a reminder sent to a
 Comms thread on their behalf via the Todoist Comms API.
 
-To post to Comms the action authenticates with a **Todoist personal access
-token** belonging to the user who will post the reminders. Personal access
-tokens can be created at
+To post to Comms the action authenticates with the **Todoist API token** of the
+user who will post the reminders. You can view and copy your API token at
 <https://app.todoist.com/app/settings/integrations/developer>. Store the token
 as a GitHub secret — tokens are easy to revoke and rotate if they ever leak.
 
@@ -35,7 +34,7 @@ jobs:
           ignore_labels: 'do not merge, blocked'
           ignore_prs_with_failing_checks: true
           review_time_ms: 86400000 # 1 day in milliseconds
-          todoist_access_token: ${{ secrets.todoist_access_token }}
+          todoist_api_token: ${{ secrets.todoist_api_token }}
           thread_id: ${{ secrets.thread_id }}
           token: ${{ secrets.DOIST_BOT_TOKEN }}
           author_to_comms_mapping: 'github_username_a:123,github_username_b:456'
@@ -48,7 +47,7 @@ jobs:
 |----|---------|-----------|
 |review_time_ms|yes|The time in milliseconds a PR has to wait before a reminder will be sen, example is 24 hours|
 |message|yes|The reminder message to send, takes 4 parameters for string interpolation: `%reviewer%`, `%pr_number%`, `%pr_title%` and `%pr_url%`|
-|todoist_access_token|yes|Todoist personal access token of the user who will post the reminders to Comms. Provide via a GitHub secret|
+|todoist_api_token|yes|Todoist API token of the user who will post the reminders to Comms. Provide via a GitHub secret|
 |thread_id|yes|The Comms thread id to post reminder messages into|
 |token|yes|The token for accessing the GitHub API to query the state of the PRs in a repo|
 |ignore_authors|no|Usernames of PR creators who's PRs will be ignored|
@@ -73,7 +72,7 @@ The `local-test/` folder contains two harnesses. Both read their configuration
 `local-test/.env.example` to `local-test/.env.local` and fill it in.
 
 To verify the Comms integration in isolation (posts a test comment into the
-configured thread using your `TODOIST_ACCESS_TOKEN`, no build needed):
+configured thread using your `TODOIST_API_TOKEN`, no build needed):
 
 ```shell
 node local-test/comms-smoke-test.mjs           # post a test comment

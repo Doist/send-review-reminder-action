@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // Smoke test for the Comms code path: post a comment into a Comms thread
-// using a Todoist personal access token.
+// using a Todoist API token.
 //
 // This mirrors src/comms.ts but is standalone (uses Node's global fetch, no
 // build needed) so you can verify the Comms call without needing an overdue
@@ -34,7 +34,11 @@ function loadEnv() {
         const eq = trimmed.indexOf('=')
         if (eq === -1) continue
         const key = trimmed.slice(0, eq).trim()
-        const value = trimmed.slice(eq + 1).trim()
+        // Strip surrounding quotes the way a shell `source` would.
+        const value = trimmed
+            .slice(eq + 1)
+            .trim()
+            .replace(/^(['"])(.*)\1$/, '$2')
         if (!(key in process.env)) process.env[key] = value
     }
 }
@@ -80,7 +84,7 @@ function generateCommentId() {
 }
 
 async function postComment() {
-    const token = required('TODOIST_ACCESS_TOKEN')
+    const token = required('TODOIST_API_TOKEN')
     const recipients = (process.env.RECIPIENTS || '')
         .split(',')
         .map((s) => s.trim())

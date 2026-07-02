@@ -14,7 +14,7 @@ const BASE58_ALPHABET = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvw
 /**
  * Posts a comment into a Comms thread.
  *
- * @param token A Todoist personal access token belonging to the posting user.
+ * @param token The Todoist API token of the posting user.
  * @param threadId The Comms thread to post the comment into.
  * @param content The rendered reminder message.
  * @param recipients Numeric Comms user ids to notify.

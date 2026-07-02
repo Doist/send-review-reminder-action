@@ -26,7 +26,7 @@ export GITHUB_REPOSITORY="${GITHUB_REPOSITORY:?set GITHUB_REPOSITORY in .env.loc
 export INPUT_TOKEN="${GITHUB_TOKEN:?set GITHUB_TOKEN in .env.local}"
 export INPUT_REVIEW_TIME_MS="${REVIEW_TIME_MS:-86400000}"
 export INPUT_MESSAGE="${MESSAGE:-%reviewer%, please review [#%pr_number% - %pr_title%](%pr_url%)}"
-export INPUT_TODOIST_ACCESS_TOKEN="${TODOIST_ACCESS_TOKEN:?}"
+export INPUT_TODOIST_API_TOKEN="${TODOIST_API_TOKEN:?}"
 export INPUT_THREAD_ID="${THREAD_ID:?}"
 export INPUT_IGNORE_AUTHORS="${IGNORE_AUTHORS:-}"
 # Fallbacks mirror the input defaults in action.yml.

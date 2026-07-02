@@ -15,7 +15,7 @@ const GITHUB_REPO = github.context.repo.repo
 const GITHUB_TOKEN = core.getInput('token', { required: true })
 const REVIEW_TIME_MS = parseInt(core.getInput('review_time_ms', { required: true }))
 const IGNORE_AUTHORS = core.getInput('ignore_authors', { required: false })
-const TODOIST_ACCESS_TOKEN = core.getInput('todoist_access_token', { required: true })
+const TODOIST_API_TOKEN = core.getInput('todoist_api_token', { required: true })
 const THREAD_ID = core.getInput('thread_id', { required: true })
 const REMINDER_MESSAGE = core.getInput('message', { required: true })
 const AUTHOR_TO_COMMS_MAPPING = core.getInput('author_to_comms_mapping', { required: false })
@@ -66,7 +66,7 @@ async function run(): Promise<void> {
             const response = await sendReminder(
                 pullRequest,
                 REMINDER_MESSAGE,
-                TODOIST_ACCESS_TOKEN,
+                TODOIST_API_TOKEN,
                 THREAD_ID,
                 authorToCommsMap,
             )

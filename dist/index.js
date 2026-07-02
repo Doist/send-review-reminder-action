@@ -9530,7 +9530,7 @@ const BASE58_ALPHABET = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvw
 /**
  * Posts a comment into a Comms thread.
  *
- * @param token A Todoist personal access token belonging to the posting user.
+ * @param token The Todoist API token of the posting user.
  * @param threadId The Comms thread to post the comment into.
  * @param content The rendered reminder message.
  * @param recipients Numeric Comms user ids to notify.
@@ -9655,7 +9655,7 @@ const GITHUB_REPO = github.context.repo.repo;
 const GITHUB_TOKEN = core.getInput('token', { required: true });
 const REVIEW_TIME_MS = parseInt(core.getInput('review_time_ms', { required: true }));
 const IGNORE_AUTHORS = core.getInput('ignore_authors', { required: false });
-const TODOIST_ACCESS_TOKEN = core.getInput('todoist_access_token', { required: true });
+const TODOIST_API_TOKEN = core.getInput('todoist_api_token', { required: true });
 const THREAD_ID = core.getInput('thread_id', { required: true });
 const REMINDER_MESSAGE = core.getInput('message', { required: true });
 const AUTHOR_TO_COMMS_MAPPING = core.getInput('author_to_comms_mapping', { required: false });
@@ -9685,7 +9685,7 @@ function run() {
             const remind = yield (0, pullrequest_1.isMissingReview)(pullRequest, REVIEW_TIME_MS, GITHUB_TOKEN, GITHUB_REPO_OWNER, GITHUB_REPO, IGNORE_REVIEW_BOTS);
             if (remind) {
                 core.info(`Sending reminder`);
-                const response = yield (0, reminder_1.sendReminder)(pullRequest, REMINDER_MESSAGE, TODOIST_ACCESS_TOKEN, THREAD_ID, authorToCommsMap);
+                const response = yield (0, reminder_1.sendReminder)(pullRequest, REMINDER_MESSAGE, TODOIST_API_TOKEN, THREAD_ID, authorToCommsMap);
                 const statusCode = response.message.statusCode;
                 if (statusCode >= 300) {
                     const message = response.message.statusMessage;
@@ -10008,7 +10008,7 @@ const comms_1 = __nccwpck_require__(4631);
  * Sends a reminder about the stalled pull request to a Comms thread.
  * @param pullRequest The PR to send the reminder about
  * @param messageTemplate The message template to fill with details of the review
- * @param token A Todoist personal access token used to authenticate the Comms API call
+ * @param token The Todoist API token used to authenticate the Comms API call
  * @param threadId The Comms thread to post the reminder into
  * @param authorToCommsMapping GitHub username to Comms user id mapping used to notify reviewers
  * @returns Awaitable http post response
