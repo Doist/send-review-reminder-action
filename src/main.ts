@@ -1,7 +1,6 @@
 import * as core from '@actions/core'
 import * as github from '@actions/github'
 
-import { getCommsAccessToken } from './comms'
 import {
     fetchPullRequests,
     isMissingReview,
@@ -16,10 +15,7 @@ const GITHUB_REPO = github.context.repo.repo
 const GITHUB_TOKEN = core.getInput('token', { required: true })
 const REVIEW_TIME_MS = parseInt(core.getInput('review_time_ms', { required: true }))
 const IGNORE_AUTHORS = core.getInput('ignore_authors', { required: false })
-const CLIENT_ID = core.getInput('client_id', { required: true })
-const CLIENT_SECRET = core.getInput('client_secret', { required: true })
-const TODOIST_USERNAME = core.getInput('todoist_username', { required: true })
-const TODOIST_PASSWORD = core.getInput('todoist_password', { required: true })
+const TODOIST_API_TOKEN = core.getInput('todoist_api_token', { required: true })
 const THREAD_ID = core.getInput('thread_id', { required: true })
 const REMINDER_MESSAGE = core.getInput('message', { required: true })
 const AUTHOR_TO_COMMS_MAPPING = core.getInput('author_to_comms_mapping', { required: false })
@@ -33,9 +29,6 @@ const IGNORE_REVIEW_BOTS = core.getInput('ignore_review_bots', { required: false
 async function run(): Promise<void> {
     const authorToCommsMap = createAuthorToCommsMap(AUTHOR_TO_COMMS_MAPPING)
     const pullRequests = await fetchPullRequests(GITHUB_TOKEN, GITHUB_REPO_OWNER, GITHUB_REPO)
-
-    // Fetched lazily on the first due reminder so quiet runs make no auth call.
-    let accessToken: string | null = null
 
     for (const pullRequest of pullRequests) {
         if (shouldIgnore(pullRequest, IGNORE_AUTHORS, IGNORE_DRAFT_PRS, IGNORE_LABELS)) {
@@ -70,18 +63,10 @@ async function run(): Promise<void> {
         )
         if (remind) {
             core.info(`Sending reminder`)
-            if (accessToken === null) {
-                accessToken = await getCommsAccessToken(
-                    CLIENT_ID,
-                    CLIENT_SECRET,
-                    TODOIST_USERNAME,
-                    TODOIST_PASSWORD,
-                )
-            }
             const response = await sendReminder(
                 pullRequest,
                 REMINDER_MESSAGE,
-                accessToken,
+                TODOIST_API_TOKEN,
                 THREAD_ID,
                 authorToCommsMap,
             )

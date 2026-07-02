@@ -9517,72 +9517,20 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.postComment = exports.getCommsAccessToken = void 0;
+exports.postComment = void 0;
 const http_client_1 = __nccwpck_require__(6255);
 const node_crypto_1 = __nccwpck_require__(6005);
 /** Socket timeout (ms) applied to all network calls so a hung connection
  * doesn't burn CI minutes on the library's 3-minute default. */
 const SOCKET_TIMEOUT_MS = 30000;
-/** Host used to exchange credentials for an OAuth access token. */
-const TOKEN_HOST = 'https://app.todoist.com';
 /** Host of the Comms API used to post comments. */
 const COMMS_HOST = 'https://comms.todoist.com';
-/** Comms identifies its protected resource (audience) by this URL. */
-const COMMS_RESOURCE = 'https://comms.todoist.com';
-/** Scope required to post a reminder comment into a Comms thread.
- * The action only calls `comments/add`, which is covered by `comms:content:write`. */
-const COMMS_SCOPE = 'comms:content:write';
 /** Base58 alphabet (Bitcoin-style: no 0, O, I or l). */
 const BASE58_ALPHABET = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
 /**
- * Authenticates against Todoist's OAuth token endpoint using the password grant
- * and returns a comms-scoped bearer token.
- *
- * Integrations no longer exist in the Comms API, so instead of a baked-in
- * integration URL we exchange real credentials for a short-lived token. The
- * `resource` parameter is what makes the issued token a comms-audience token.
- *
- * @param clientId OAuth client id of a confidential Todoist application.
- * @param clientSecret OAuth client secret for that application.
- * @param username Todoist account email.
- * @param password Todoist account password.
- * @returns The access token string to use as a bearer credential.
- */
-function getCommsAccessToken(clientId, clientSecret, username, password) {
-    var _a;
-    return __awaiter(this, void 0, void 0, function* () {
-        const body = new URLSearchParams({
-            grant_type: 'password',
-            client_id: clientId,
-            client_secret: clientSecret,
-            username: username,
-            password: password,
-            scope: COMMS_SCOPE,
-            resource: COMMS_RESOURCE,
-        }).toString();
-        const httpClient = new http_client_1.HttpClient('send-review-reminder', [], {
-            socketTimeout: SOCKET_TIMEOUT_MS,
-        });
-        const response = yield httpClient.post(`${TOKEN_HOST}/oauth/access_token`, body, {
-            'content-type': 'application/x-www-form-urlencoded',
-        });
-        const responseBody = yield response.readBody();
-        const statusCode = (_a = response.message.statusCode) !== null && _a !== void 0 ? _a : 0;
-        if (statusCode >= 300) {
-            throw new Error(`Failed to obtain Comms access token: ${statusCode} - ${responseBody}`);
-        }
-        const parsed = JSON.parse(responseBody);
-        if (!parsed.access_token) {
-            throw new Error('Comms access token response did not contain an access_token');
-        }
-        return parsed.access_token;
-    });
-}
-exports.getCommsAccessToken = getCommsAccessToken;
-/**
  * Posts a comment into a Comms thread.
  *
- * @param token A comms-scoped bearer token from {@link getCommsAccessToken}.
+ * @param token The Todoist API token of the posting user.
  * @param threadId The Comms thread to post the comment into.
  * @param content The rendered reminder message.
  * @param recipients Numeric Comms user ids to notify.
@@ -9700,7 +9648,6 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 const core = __importStar(__nccwpck_require__(2186));
 const github = __importStar(__nccwpck_require__(5438));
-const comms_1 = __nccwpck_require__(4631);
 const pullrequest_1 = __nccwpck_require__(5885);
 const reminder_1 = __nccwpck_require__(3081);
 const GITHUB_REPO_OWNER = github.context.repo.owner;
@@ -9708,10 +9655,7 @@ const GITHUB_REPO = github.context.repo.repo;
 const GITHUB_TOKEN = core.getInput('token', { required: true });
 const REVIEW_TIME_MS = parseInt(core.getInput('review_time_ms', { required: true }));
 const IGNORE_AUTHORS = core.getInput('ignore_authors', { required: false });
-const CLIENT_ID = core.getInput('client_id', { required: true });
-const CLIENT_SECRET = core.getInput('client_secret', { required: true });
-const TODOIST_USERNAME = core.getInput('todoist_username', { required: true });
-const TODOIST_PASSWORD = core.getInput('todoist_password', { required: true });
+const TODOIST_API_TOKEN = core.getInput('todoist_api_token', { required: true });
 const THREAD_ID = core.getInput('thread_id', { required: true });
 const REMINDER_MESSAGE = core.getInput('message', { required: true });
 const AUTHOR_TO_COMMS_MAPPING = core.getInput('author_to_comms_mapping', { required: false });
@@ -9725,8 +9669,6 @@ function run() {
     return __awaiter(this, void 0, void 0, function* () {
         const authorToCommsMap = createAuthorToCommsMap(AUTHOR_TO_COMMS_MAPPING);
         const pullRequests = yield (0, pullrequest_1.fetchPullRequests)(GITHUB_TOKEN, GITHUB_REPO_OWNER, GITHUB_REPO);
-        // Fetched lazily on the first due reminder so quiet runs make no auth call.
-        let accessToken = null;
         for (const pullRequest of pullRequests) {
             if ((0, pullrequest_1.shouldIgnore)(pullRequest, IGNORE_AUTHORS, IGNORE_DRAFT_PRS, IGNORE_LABELS)) {
                 core.info(`Ignoring #${pullRequest.number} "${pullRequest.title}"`);
@@ -9743,10 +9685,7 @@ function run() {
             const remind = yield (0, pullrequest_1.isMissingReview)(pullRequest, REVIEW_TIME_MS, GITHUB_TOKEN, GITHUB_REPO_OWNER, GITHUB_REPO, IGNORE_REVIEW_BOTS);
             if (remind) {
                 core.info(`Sending reminder`);
-                if (accessToken === null) {
-                    accessToken = yield (0, comms_1.getCommsAccessToken)(CLIENT_ID, CLIENT_SECRET, TODOIST_USERNAME, TODOIST_PASSWORD);
-                }
-                const response = yield (0, reminder_1.sendReminder)(pullRequest, REMINDER_MESSAGE, accessToken, THREAD_ID, authorToCommsMap);
+                const response = yield (0, reminder_1.sendReminder)(pullRequest, REMINDER_MESSAGE, TODOIST_API_TOKEN, THREAD_ID, authorToCommsMap);
                 const statusCode = response.message.statusCode;
                 if (statusCode >= 300) {
                     const message = response.message.statusMessage;
@@ -10069,7 +10008,7 @@ const comms_1 = __nccwpck_require__(4631);
  * Sends a reminder about the stalled pull request to a Comms thread.
  * @param pullRequest The PR to send the reminder about
  * @param messageTemplate The message template to fill with details of the review
- * @param token A comms-scoped bearer token used to authenticate the Comms API call
+ * @param token The Todoist API token used to authenticate the Comms API call
  * @param threadId The Comms thread to post the reminder into
  * @param authorToCommsMapping GitHub username to Comms user id mapping used to notify reviewers
  * @returns Awaitable http post response
